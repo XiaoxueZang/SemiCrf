@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(Wapiti)
+project(SemiCrf)
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
@@ -43,7 +43,6 @@ set(SOURCE_FILES
         COPYING
         HISTORY
         INSTALL
-        Makefile
-        README.mkd)
+        Makefile)
 
-add_executable(Wapiti ${SOURCE_FILES})
+add_executable(SemiCrf ${SOURCE_FILES})
