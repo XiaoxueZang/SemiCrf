@@ -1,7 +1,6 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,25 +14,6 @@
 #include "vmath.h"
 #include "pattern.h"
 
-/*******************************************************************************
- * Linear chain CRF model
- *
- *   There is three concept that must be well understand here, the labels,
- *   observations, and features. The labels are the values predicted by the
- *   model at each point of the sequence and denoted by Y. The observations are
- *   the values, at each point of the sequence, given to the model in order to
- *   predict the label and denoted by O. A feature is a test on both labels and
- *   observations, denoted by F. In linear chain CRF there is two kinds of
- *   features :
- *     - unigram feature who represent a test on the observations at the current
- *       point and the label at current point.
- *     - bigram feature who represent a test on the observation at the current
- *       point and two labels : the current one and the previous one.
- *   So for each observation, there Y possible unigram features and Y*Y possible
- *   bigram features. The kind of features used by the model for a given
- *   observation depend on the pattern who generated it.
- ******************************************************************************/
-
 /* mdl_new:
  *   Allocate a new empty model object linked with the given reader. The model
  *   have to be synchronized before starting training or labelling. If you not
@@ -42,8 +22,8 @@
  */
 mdl_t *mdl_new(rdr_t *rdr) {
     mdl_t *mdl = xmalloc(sizeof(mdl_t));
-    mdl->nlbl = mdl->nobs = mdl->nftr = 0;
-    mdl->kind = NULL;
+    mdl->nlbl = mdl->nobs = mdl->nftr = mdl->npats = 0;
+    // mdl->kind = NULL;
     mdl->uoff = mdl->boff = NULL;
     mdl->theta = NULL;
     mdl->train = mdl->devel = NULL;
@@ -62,7 +42,7 @@ mdl_t *mdl_new(rdr_t *rdr) {
  *   loaded in the model.
  */
 void mdl_free(mdl_t *mdl) {
-    free(mdl->kind);
+    // free(mdl->kind);
     free(mdl->uoff);
     free(mdl->boff);
     if (mdl->theta != NULL)
@@ -101,13 +81,17 @@ void mdl_free(mdl_t *mdl) {
  *   This reduce the risk of mistakes.
  */
 void mdl_sync(mdl_t *mdl) {
-    const uint32_t Y = qrk_count(mdl->reader->lbl);
+    const uint64_t Y = qrk_count(mdl->reader->lbl);
     const uint64_t O = qrk_count(mdl->reader->obs);
     const uint64_t F = qrk_count(mdl->reader->featList);
-    const uint32_t P = qrk_count(mdl->reader->pats);
+    const uint64_t P = qrk_count(mdl->reader->pats);
+    const uint64_t ForS = qrk_count(mdl->reader->forwardStateMap);
+    const uint64_t BackS = qrk_count(mdl->reader->backwardStateMap);
     qrk_lock(mdl->reader->lbl, true);
     qrk_lock(mdl->reader->obs, true);
     qrk_lock(mdl->reader->pats, true);
+    qrk_lock(mdl->reader->forwardStateMap, true);
+    qrk_lock(mdl->reader->backwardStateMap, true);
     // If model is already synchronized, do nothing and just return
     if (mdl->nlbl == Y && mdl->nobs == O)
         return;
@@ -117,6 +101,7 @@ void mdl_sync(mdl_t *mdl) {
     // case we also display a warning as this is probably not expected by
     // the user. If only new observations was added, we will try to expand
     // the model.
+    /*
     uint64_t oldF = mdl->nftr;
     uint64_t oldO = mdl->nobs;
     if (mdl->nlbl != Y && mdl->nlbl != 0) {
@@ -133,17 +118,13 @@ void mdl_sync(mdl_t *mdl) {
         }
         oldF = oldO = 0;
     }
+     */
     mdl->npats = P;
     mdl->nlbl = Y;
     mdl->nobs = O;
     mdl->nftr = F;
-
-    generateForwardStateMap(mdl);
-    generateBackwardStateMap(mdl);
-
-    // initializeTransitions(mdl);
-    mdl->nfws = mdl->reader->nforwardStateMap;
-    mdl->nbws = mdl->reader->nbackwardStateMap;
+    mdl->nfws = ForS;
+    mdl->nbws = BackS;
     mdl->forwardTransition = xmalloc(sizeof(transition_map_t) * mdl->nfws);
     mdl->backwardTransition = xmalloc(sizeof(int) * (mdl->nbws) * (Y));
     mdl->allSuffixes = xmalloc(sizeof(id_map_t) * mdl->nbws);
@@ -211,60 +192,11 @@ void mdl_sync(mdl_t *mdl) {
 }
 */
 
-void generateForwardStateMap(mdl_t *mdl) {
-    rdr_t *reader = mdl->reader;
-    qrk_t *forwardStateMap = reader->forwardStateMap;
-    qrk_str2id(forwardStateMap, "");
-    char *str = xmalloc(sizeof(char) * (2 * reader->maxSegment - 1));
-    for (uint64_t id = 0; id < mdl->nlbl; ++id) {
-        strcpy(str, qrk_id2str(reader->lbl, id));
-        qrk_str2id(forwardStateMap, str);
-        // info("the forwardstatemap %s\n", str);
-    }
-    for (uint64_t id = 0; id < mdl->npats; ++id) {
-        strcpy(str, qrk_id2str(reader->pats, id));
-        labelPat_t *strStruct = generateLabelPatStruct(str);
-        uint32_t size = strStruct->segNum - 1;
-        for (int i = 0; i < size; ++i) {
-            // info("the forwardstatemap %s\n", strStruct->prefixes[i]);
-            qrk_str2id(forwardStateMap, strStruct->prefixes[i]);
-        }
-    }
-    reader->nforwardStateMap = qrk_count(forwardStateMap);
-    qrk_lock(forwardStateMap, true);
-    return;
-}
-
-void generateBackwardStateMap(mdl_t *mdl) {
-    uint32_t size = 50;
-    rdr_t *reader = mdl->reader;
-    int lastLabel;
-    char *p = xmalloc(sizeof(char) * size);
-    for (uint64_t id = 0; id < reader->nforwardStateMap; ++id) {
-        strcpy(p, qrk_id2str(reader->forwardStateMap, id));
-        lastLabel = (strcmp(p, "") == 0) ? -1 : (int) getLastLabelId(reader, p);
-
-        for (uint64_t yid = 0; yid < mdl->nlbl; ++yid) {
-            if ((yid != lastLabel) || (reader->maxSegment == 1)) {
-                char *head = concat(qrk_id2str(reader->lbl, yid), "|");
-                const char *py = (strcmp(p, "") == 0) ? qrk_id2str(reader->lbl, yid) : concat(head, p);
-                qrk_str2id(reader->backwardStateMap, py);
-                // info("the backwardstatemap %s\n", py);
-            }
-        }
-    }
-    qrk_lock(reader->backwardStateMap, true);
-    reader->nbackwardStateMap = qrk_count(reader->backwardStateMap);
-    return;
-}
-
 void buildForwardTransition(mdl_t *mdl) {
     rdr_t *reader = mdl->reader;
     uint32_t curLen;
-    uint32_t size = reader->nforwardStateMap;
+    uint64_t size = reader->nforwardStateMap;
     uint64_t index, backIndex;
-    // uint32_t forwardTransitionOne[reader->nforwardStateMap][reader->nforwardStateMap] = mdl->reader->forwardTransitionOne;
-    // uint32_t forwardTransitionTwo[reader->nforwardStateMap][reader->nbackwardStateMap] = m;
     transition_map_t (*forwardTransition)[size] = (void *) mdl->forwardTransition;
     int *lastForwardStateLabel = mdl->lastForwardStateLabel;
     for (uint32_t i = 0; i < size; ++i) {
@@ -273,7 +205,6 @@ void buildForwardTransition(mdl_t *mdl) {
         (*forwardTransition)[i].len = 0;
     }
     for (uint32_t fsid = 0; fsid < size; ++fsid) {
-        // char *fs = xmalloc(sizeof(char) * size);
         const char *fs = qrk_id2str(reader->forwardStateMap, fsid);
         lastForwardStateLabel[fsid] = (strcmp(fs, "") == 0) ? -1 : (int) getLastLabelId(reader, fs);
         for (uint32_t lbid = 0; lbid < mdl->nlbl; ++lbid) {
@@ -329,7 +260,7 @@ void buildPatternTransition(mdl_t *mdl) {
     qrk_t *lbDat = mdl->reader->lbl;
     uint64_t lastY, lastLb, piyId, ziIndex;
     transition_map_t *map = mdl->patternTransition;
-    char *piy = xmalloc(sizeof(char) * (mdl->reader->maxSegment * 2 - 1));
+    char *piy; // = xmalloc(sizeof(char) * (mdl->reader->maxSegment * 2 - 1));
     for (uint64_t pId = 0; pId < mdl->npats; ++pId) {
         const char *p = qrk_id2str(patDat, pId);
         mdl->patternBackwardId[pId] = (int) qrk_str2id(backDat, p);
@@ -364,12 +295,12 @@ void buildPatternTransition(mdl_t *mdl) {
 void generateSentenceObs(mdl_t *mdl) {
     uint64_t obId;
     dat_t *dat = mdl->train;
-    uint32_t S = mdl->reader->maxSegment;
+    int32_t S = mdl->reader->maxSegment;
     for (uint32_t n = 0; n < dat->nseq; ++n) {
         tok_t *tok = dat->tok[n];
         uint32_t T = tok->len;
         tok->observationMapjp = xmalloc(sizeof(id_map_t) * T * S);
-        id_map_t (*poi)[T][S] = (void *)tok->observationMapjp;
+        id_map_t (*poi)[T][S] = (void *) tok->observationMapjp;
         for (uint32_t i = 0; i < T; ++i) {
             for (uint32_t j = i; j < T && j - i < S; ++j) {
                 (*poi)[i][j - i].len = 0;
@@ -388,47 +319,47 @@ void generateSentenceObs(mdl_t *mdl) {
         }
     }
 }
+
 /* mdl_save:
  *   Save a model to be restored later in a platform independant way.
-
-void mdl_save(mdl_t *mdl, FILE *file) {
-	uint64_t nact = 0;
-	for (uint64_t f = 0; f < mdl->nftr; f++)
-		if (mdl->theta[f] != 0.0)
-			nact++;
-	fprintf(file, "#mdl#%d#%"PRIu64"\n", mdl->type, nact);
-	rdr_save(mdl->reader, file);
-	for (uint64_t f = 0; f < mdl->nftr; f++)
-		if (mdl->theta[f] != 0.0)
-			fprintf(file, "%"PRIu64"=%la\n", f, mdl->theta[f]);
-}
 */
+void mdl_save(mdl_t *mdl, FILE *file) {
+    uint64_t nact = 0;
+    for (uint64_t f = 0; f < mdl->nftr; f++)
+        if (mdl->theta[f] != 0.0)
+            nact++;
+    fprintf(file, "#mdl#%d#%"PRIu64"\n", mdl->type, nact);
+    rdr_save(mdl->reader, file);
+    for (uint64_t f = 0; f < mdl->nftr; f++)
+        if (mdl->theta[f] != 0.0)
+            fprintf(file, "%"PRIu64"=%la\n", f, mdl->theta[f]);
+}
+
 /* mdl_load:
  *   Read back a previously saved model to continue training or start labeling.
  *   The returned model is synced and the quarks are locked. You must give to
  *   this function an empty model fresh from mdl_new.
-
-void mdl_load(mdl_t *mdl, FILE *file) {
-	const char *err = "invalid model format";
-	uint64_t nact = 0;
-	int type;
-	if (fscanf(file, "#mdl#%d#%"SCNu64"\n", &type, &nact) == 2) {
-		mdl->type = type;
-	} else {
-		rewind(file);
-		if (fscanf(file, "#mdl#%"SCNu64"\n", &nact) == 1)
-			mdl->type = 0;
-		else
-			fatal(err);
-	}
-	rdr_load(mdl->reader, file);
-	mdl_sync(mdl);
-	for (uint64_t i = 0; i < nact; i++) {
-		uint64_t f;
-		double v;
-		if (fscanf(file, "%"SCNu64"=%la\n", &f, &v) != 2)
-			fatal(err);
-		mdl->theta[f] = v;
-	}
-}
 */
+void mdl_load(mdl_t *mdl, FILE *file) {
+    const char *err = "invalid model format";
+    uint64_t nact = 0;
+    int type;
+    if (fscanf(file, "#mdl#%d#%"SCNu64"\n", &type, &nact) == 2) {
+        mdl->type = type;
+    } else {
+        rewind(file);
+        if (fscanf(file, "#mdl#%"SCNu64"\n", &nact) == 1)
+            mdl->type = 0;
+        else
+            fatal(err);
+    }
+    rdr_load(mdl->reader, file);
+    mdl_sync(mdl);
+    for (uint64_t i = 0; i < nact; i++) {
+        uint64_t f;
+        double v;
+        if (fscanf(file, "%"SCNu64"=%la\n", &f, &v) != 2)
+            fatal(err);
+        mdl->theta[f] = v;
+    }
+}

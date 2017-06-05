@@ -103,14 +103,15 @@ void atm_inc(volatile double *value, double inc) {
  *     3/ we take the component-wise exponential of the resulting matrix
  *          (this can be done efficiently with vector maths)
  */
-void grd_fldopsi(grd_st_t *grd_st, const seq_t *seq) {
+void grd_fldopsi(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
+	const uint64_t F = mdl->nftr;
 	const double  *x = mdl->theta;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
-	double (*psi)[T][Y][Y] = (void *)grd_st->psi;
+	const uint32_t T = tok->len;
+	double (*psi)[F] = (void *)grd_st->psi;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok[t]);
 		for (uint32_t y = 0; y < Y; y++) {
 			double sum = 0.0;
 			for (uint32_t n = 0; n < pos->ucnt; n++) {
@@ -122,7 +123,7 @@ void grd_fldopsi(grd_st_t *grd_st, const seq_t *seq) {
 		}
 	}
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
 			for (uint32_t y = 0; y < Y; y++, d++) {
 				double sum = 0.0;
@@ -160,18 +161,18 @@ void grd_fldopsi(grd_st_t *grd_st, const seq_t *seq) {
  *          one. (here also this can be done efficiently with vector
  *          maths)
  */
-void grd_spdopsi(grd_st_t *grd_st, const seq_t *seq) {
+void grd_spdopsi(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const double  *x = mdl->theta;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint32_t T = tok->len;
 	double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
 	double    *psival        =         grd_st->psi;
 	uint32_t  *psiyp         =         grd_st->psiyp;
 	uint32_t (*psiidx)[T][Y] = (void *)grd_st->psiidx;
 	uint32_t  *psioff        =         grd_st->psioff;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		for (uint32_t y = 0; y < Y; y++) {
 			double sum = 0.0;
 			for (uint32_t n = 0; n < pos->ucnt; n++) {
@@ -183,7 +184,7 @@ void grd_spdopsi(grd_st_t *grd_st, const seq_t *seq) {
 	}
 	uint32_t off = 0;
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		psioff[t] = off;
 		for (uint32_t y = 0, nnz = 0; y < Y; y++) {
 			for (uint32_t yp = 0; yp < Y; yp++) {
@@ -226,12 +227,15 @@ void grd_spdopsi(grd_st_t *grd_st, const seq_t *seq) {
  *   with α-scale_t the scaling factor used for the α vector at position t
  *   in the forward recursion.
  */
-void grd_flfwdbwd(grd_st_t *grd_st, const seq_t *seq) {
+void grd_flfwdbwd(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const uint64_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
-	const double (*psi)[T][Y][Y] = (void *)grd_st->psi;
-	double (*alpha)[T][Y] = (void *)grd_st->alpha;
+	const uint64_t F = mdl->nftr;
+	const uint32_t T = tok->len;
+	const uint64_t H = mdl->nfws;
+	const uint64_t
+	const double (*psi)[F] = (void *)grd_st->psi;
+	double (*alpha)[T][] = (void *)grd_st->alpha;
 	double (*beta )[T][Y] = (void *)grd_st->beta;
 	double  *scale        =         grd_st->scale;
 	double  *unorm        =         grd_st->unorm;
@@ -286,10 +290,10 @@ void grd_flfwdbwd(grd_st_t *grd_st, const seq_t *seq) {
  *   And here also we reduce the number of multiplication if the matrix is
  *   really sparse.
  */
-void grd_spfwdbwd(grd_st_t *grd_st, const seq_t *seq) {
+void grd_spfwdbwd(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint64_t Y = mdl->nlbl;
+	const uint32_t T = tok->len;
 	const double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
 	const double    *psival        =         grd_st->psi;
 	const uint32_t  *psiyp         =         grd_st->psiyp;
@@ -379,10 +383,10 @@ void grd_spfwdbwd(grd_st_t *grd_st, const seq_t *seq) {
  *   vector but just adding the contribution of this sequence. This allow to
  *   compute it easily the gradient over more than one sequence.
  */
-void grd_flupgrad(grd_st_t *grd_st, const seq_t *seq) {
+void grd_flupgrad(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint32_t T = tok->len;
 	const double (*psi  )[T][Y][Y] = (void *)grd_st->psi;
 	const double (*alpha)[T][Y]    = (void *)grd_st->alpha;
 	const double (*beta )[T][Y]    = (void *)grd_st->beta;
@@ -390,7 +394,7 @@ void grd_flupgrad(grd_st_t *grd_st, const seq_t *seq) {
 	const double  *bnorm           =         grd_st->bnorm;
 	double *g = grd_st->g;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		for (uint32_t y = 0; y < Y; y++) {
 			double e = (*alpha)[t][y] * (*beta)[t][y] * unorm[t];
 			for (uint32_t n = 0; n < pos->ucnt; n++) {
@@ -400,7 +404,7 @@ void grd_flupgrad(grd_st_t *grd_st, const seq_t *seq) {
 		}
 	}
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
 			for (uint32_t y = 0; y < Y; y++, d++) {
 				double e = (*alpha)[t - 1][yp] * (*beta)[t][y]
@@ -422,10 +426,10 @@ void grd_flupgrad(grd_st_t *grd_st, const seq_t *seq) {
  *   matrix. We first fill it with the unigram component and next multiply it
  *   with the bigram one.
  */
-void grd_spupgrad(grd_st_t *grd_st, const seq_t *seq) {
+void grd_spupgrad(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint32_t T = tok->len;
 	const double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
 	const double    *psival        =         grd_st->psi;
 	const uint32_t  *psiyp         =         grd_st->psiyp;
@@ -437,7 +441,7 @@ void grd_spupgrad(grd_st_t *grd_st, const seq_t *seq) {
 	const double    *bnorm         =         grd_st->bnorm;
 	double *g = grd_st->g;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		for (uint32_t y = 0; y < Y; y++) {
 			double e = (*alpha)[t][y] * (*beta)[t][y] * unorm[t];
 			for (uint32_t n = 0; n < pos->ucnt; n++) {
@@ -447,7 +451,7 @@ void grd_spupgrad(grd_st_t *grd_st, const seq_t *seq) {
 		}
 	}
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
+		const pos_t *pos = &(tok->pos[t]);
 		// We build the expectation matrix
 		double e[Y][Y];
 		for (uint32_t yp = 0; yp < Y; yp++)
@@ -482,21 +486,21 @@ void grd_spupgrad(grd_st_t *grd_st, const seq_t *seq) {
  *   distribution. This is the second step of the gradient computation shared
  *   by the non-sparse and sparse version.
  */
-void grd_subemp(grd_st_t *grd_st, const seq_t *seq) {
+void grd_subemp(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint32_t T = tok->len;
 	double *g = grd_st->g;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
-		const uint32_t y = seq->pos[t].lbl;
+		const pos_t *pos = &(tok->pos[t]);
+		const uint32_t y = tok->pos[t].lbl;
 		for (uint32_t n = 0; n < pos->ucnt; n++)
 			atm_inc(g + mdl->uoff[pos->uobs[n]] + y, -1.0);
 	}
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
-		const uint32_t yp = seq->pos[t - 1].lbl;
-		const uint32_t y  = seq->pos[t    ].lbl;
+		const pos_t *pos = &(tok->pos[t]);
+		const uint32_t yp = tok->pos[t - 1].lbl;
+		const uint32_t y  = tok->pos[t    ].lbl;
 		const uint32_t d  = yp * Y + y;
 		for (uint32_t n = 0; n < pos->bcnt; n++)
 			atm_inc(g + mdl->boff[pos->bobs[n]] + d, -1.0);
@@ -525,11 +529,11 @@ void grd_subemp(grd_st_t *grd_st, const seq_t *seq) {
  *   weights will be non-nul only for observations present in the sequence, we
  *   sum only over these ones.
  */
-void grd_logloss(grd_st_t *grd_st, const seq_t *seq) {
+void grd_logloss(grd_st_t *grd_st, const tok_t *tok) {
 	const mdl_t *mdl = grd_st->mdl;
 	const double  *x = mdl->theta;
 	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
+	const uint32_t T = tok->len;
 	const double (*alpha)[T][Y] = (void *)grd_st->alpha;
 	const double  *scale        =         grd_st->scale;
 	double logz = 0.0;
@@ -540,15 +544,15 @@ void grd_logloss(grd_st_t *grd_st, const seq_t *seq) {
 		logz -= log(scale[t]);
 	double lloss = logz;
 	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
-		const uint32_t y = seq->pos[t].lbl;
+		const pos_t *pos = &(tok->pos[t]);
+		const uint32_t y = tok->pos[t].lbl;
 		for (uint32_t n = 0; n < pos->ucnt; n++)
 			lloss -= x[mdl->uoff[pos->uobs[n]] + y];
 	}
 	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(seq->pos[t]);
-		const uint32_t yp = seq->pos[t - 1].lbl;
-		const uint32_t y  = seq->pos[t    ].lbl;
+		const pos_t *pos = &(tok->pos[t]);
+		const uint32_t yp = tok->pos[t - 1].lbl;
+		const uint32_t y  = tok->pos[t    ].lbl;
 		const uint32_t d  = yp * Y + y;
 		for (uint32_t n = 0; n < pos->bcnt; n++)
 			lloss -= x[mdl->boff[pos->bobs[n]] + d];
@@ -564,21 +568,17 @@ void grd_logloss(grd_st_t *grd_st, const seq_t *seq) {
  *   just accumulate the values for the given sequence in it. This allow to
  *   easily compute the gradient over a set of sequences.
  */
-void grd_docrf(grd_st_t *grd_st, const seq_t *seq) {
-	const mdl_t *mdl = grd_st->mdl;
+void grd_docrf(grd_st_t *grd_st, const tok_t *tok) {
+	// const mdl_t *mdl = grd_st->mdl;
 	grd_st->first = 0;
-	grd_st->last  = seq->len - 1;
-	if (!mdl->opt->sparse) {
-		grd_fldopsi(grd_st, seq);
-		grd_flfwdbwd(grd_st, seq);
-		grd_flupgrad(grd_st, seq);
-	} else {
-		grd_spdopsi(grd_st, seq);
-		grd_spfwdbwd(grd_st, seq);
-		grd_spupgrad(grd_st, seq);
-	}
-	grd_subemp(grd_st, seq);
-	grd_logloss(grd_st, seq);
+	grd_st->last  = tok->len - 1;
+
+	grd_fldopsi(grd_st, tok);
+	grd_flfwdbwd(grd_st, tok);
+	grd_flupgrad(grd_st, tok);
+
+	grd_subemp(grd_st, tok);
+	grd_logloss(grd_st, tok);
 }
 
 /******************************************************************************
@@ -679,10 +679,10 @@ void grd_stfree(grd_st_t *grd_st) {
  *   Compute the gradient of a single sample choosing between the maxent
  *   optimised codepath and classical one depending of the sample.
  */
-void grd_dospl(grd_st_t *grd_st, const seq_t *seq) {
-	grd_stcheck(grd_st, seq->len);
+void grd_dospl(grd_st_t *grd_st, const tok_t *tok) {
+	grd_stcheck(grd_st, tok->len);
 	rdr_t *rdr = grd_st->mdl->reader;
-	grd_docrf(grd_st, seq);
+	grd_docrf(grd_st, tok);
 }
 
 /* grd_new:
@@ -743,7 +743,7 @@ void grd_worker(job_t *job, uint32_t id, uint32_t cnt, grd_st_t *grd_st) {
 	uint32_t count, pos;
 	while (mth_getjob(job, &count, &pos)) {
 		for (uint32_t s = pos; !uit_stop && s < pos + count; s++)
-			grd_dospl(grd_st, dat->seq[s]);
+			grd_dospl(grd_st, dat->tok[s]);
 		if (uit_stop)
 			break;
 	}
