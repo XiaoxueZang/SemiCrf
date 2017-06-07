@@ -360,10 +360,6 @@ void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
     return;
 }
 
-void grd_exp(grd_st_t *grd_st, const tok_t *tok) {
-
-}
-
 void grd_loss(grd_st_t *grd_st, const tok_t *tok) {
     const mdl_t *mdl = grd_st->mdl;
     const uint64_t F = mdl->nftr;

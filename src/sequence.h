@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "wapiti.h"
+// #include "model.h"
 
 /*******************************************************************************
  * Sequences and Dataset objects
@@ -49,6 +49,7 @@ struct raw_s {
 	uint32_t  len;      //   T     Sequence length
 	char     *lines[];  //  [T]    Raw lines directly from file
 };
+
 
 
 typedef struct id_map_s id_map_t;

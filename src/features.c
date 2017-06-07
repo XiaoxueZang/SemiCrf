@@ -78,10 +78,10 @@ feature_dat_t* generateCrfFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t seg
                         "0CEIL.", "0CEILDIST.", "1FLOOR.", "1FLOORDIST.", "1CEIL.", "1CEILDIST.", "2FLOOR.",
                         "2FLOORDIST.", "2CEIL.", "2CEILDIST.", "3FLOOR.", "3FLOORDIST.", "3CEIL.", "3CEILDIST.",
                         "4FLOOR.", "4FLOORDIST.", "4CEIL.", "4CEILDIST."};
-    for (uint32_t i = 0; i <= 3; ++i) {
+    for (uint32_t i = 0; i <= 2; ++i) {
         allFeats->features[allFeats->len++] = constructFeature(concat(featHead[i], tok->toks[segStart][i]), labelPat);
     }
-
+    allFeats->features[allFeats->len++] = constructFeature(concat(featHead[3], tok->toks[segEnd][3]), labelPat);
     for (uint32_t i = segStart; i <= segEnd; ++i) {
         for (uint32_t j = 4; j <= 18; ++j) {
             allFeats->features[allFeats->len++] = constructFeature(concat(featHead[j], tok->toks[i][j]), labelPat);

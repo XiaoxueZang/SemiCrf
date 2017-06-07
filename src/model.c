@@ -317,13 +317,19 @@ void generateSentenceObs(mdl_t *mdl) {
                 (*poi)[i][j - i].ids = xmalloc(sizeof(uint64_t) * mdl->nobs);
                 char *labelPat = generateLabelPattern(tok, i, j);
                 feature_dat_t *features = generateObs(tok, mdl->reader, i, j, labelPat);
+                qrk_t *set = qrk_new();
+                qrk_lock(set, true);
                 for (uint32_t id = 0; id < features->len; ++id) {
                     char *obs = features->features[id]->obs;
                     obId = qrk_str2id(mdl->reader->obs, obs);
-                    if (obId != none) {
+                    if ((obId != none) && (qrk_str2id(set, obs) == none)) {
+                        qrk_lock(set, false);
+                        qrk_str2id(set, obs);
+                        qrk_lock(set, true);
                         (*poi)[i][j - i].ids[(*poi)[i][j - i].len++] = obId;
                     }
                 }
+                qrk_free(set);
                 // (*poi)[i][j - i].ids = xrealloc((*poi)[i][j - i].ids, (*poi)[i][j - i].len);
             }
         }

@@ -11,6 +11,7 @@
 #include "sequence.h"
 #include "features.h"
 
+
 /* rdr_t:
  *   The reader object who hold all informations needed to parse the input file:
  *   the patterns and quark for labels and observations. We keep separate count
@@ -18,13 +19,6 @@
  *   also store the expected number of column in the input data to check that
  *   pattern are appliables.
  */
-typedef struct list_s list_t;
-struct list_s {
-    uint32_t key;
-    uint32_t val;
-    list_t *next;
-};
-
 
 typedef struct rdr_s rdr_t;
 struct rdr_s {
