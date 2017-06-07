@@ -22,13 +22,16 @@ struct grd_st_s {
     uint32_t len;     // =T        max length of sequence
     double *g;       // [F]       vector where to put gradient updates
     double lloss;   //           loss value for the sequence
-    double *psi;     // [F]       the transitions scores
+    double logZx;
+    // double *psi;     // [F]       the transitions scores
     // double   *psiuni;  // [T][Y]    | Same as psi in sparse format
     // uint32_t *psiyp;   // [T][Y][Y] |
     // uint32_t *psiidx;  // [T][Y]    |
     // uint32_t *psioff;  // [T]
     double *alpha;   // [T][Y]    forward scores
     double *beta;    // [T][Y]    backward scores
+    double *marginal; // [P][T][S]
+    double *expec;   // [F]
     double *scale;   // [T]       scaling factors of forward scores
     double *unorm;   // [T]       normalization factors for unigrams
     double *bnorm;   // [T]       normalization factors for bigrams
@@ -41,20 +44,6 @@ grd_st_t *grd_stnew(mdl_t *mdl, double *g);
 void grd_stfree(grd_st_t *grd_st);
 
 void grd_stcheck(grd_st_t *grd_st, uint32_t len);
-
-void grd_fldopsi(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_flfwdbwd(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_flupgrad(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_spdopsi(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_spfwdbwd(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_spupgrad(grd_st_t *grd_st, const tok_t *seq);
-
-void grd_logloss(grd_st_t *grd_st, const tok_t *seq);
 
 void grd_dospl(grd_st_t *grd_st, const tok_t *seq);
 

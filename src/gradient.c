@@ -22,23 +22,25 @@
 #ifdef ATM_ANSI
 static inline
 void atm_inc(double *value, double inc) {
-	*value += inc;
+    *value += inc;
 }
 #else
+
 static inline
 void atm_inc(volatile double *value, double inc) {
-	while (1) {
-		volatile union {
-			double   d;
-			uint64_t u;
-		} old, new;
-		old.d = *value;
-		new.d = old.d + inc;
-		uint64_t *ptr = (uint64_t *)value;
-		if (__sync_bool_compare_and_swap(ptr, old.u, new.u))
-			break;
-	}
+    while (1) {
+        volatile union {
+            double d;
+            uint64_t u;
+        } old, new;
+        old.d = *value;
+        new.d = old.d + inc;
+        uint64_t *ptr = (uint64_t *) value;
+        if (__sync_bool_compare_and_swap(ptr, old.u, new.u))
+            break;
+    }
 }
+
 #endif
 
 /******************************************************************************
@@ -103,42 +105,44 @@ void atm_inc(volatile double *value, double inc) {
  *     3/ we take the component-wise exponential of the resulting matrix
  *          (this can be done efficiently with vector maths)
  */
+/*
 void grd_fldopsi(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint64_t F = mdl->nftr;
-	const double  *x = mdl->theta;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	double (*psi)[F] = (void *)grd_st->psi;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok[t]);
-		for (uint32_t y = 0; y < Y; y++) {
-			double sum = 0.0;
-			for (uint32_t n = 0; n < pos->ucnt; n++) {
-				const uint64_t o = pos->uobs[n];
-				sum += x[mdl->uoff[o] + y];
-			}
-			for (uint32_t yp = 0; yp < Y; yp++)
-				(*psi)[t][yp][y] = sum;
-		}
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
-			for (uint32_t y = 0; y < Y; y++, d++) {
-				double sum = 0.0;
-				for (uint32_t n = 0; n < pos->bcnt; n++) {
-					const uint64_t o = pos->bobs[n];
-					sum += x[mdl->boff[o] + d];
-					if (sum > 0.0)
-						info("sum of {*psi}[%u][%u][%u] is %f", t, yp, y, sum);
-				}
-				(*psi)[t][yp][y] += sum;
-			}
-		}
-	}
-	xvm_expma((double *)psi, (double *)psi, 0.0, (uint64_t)T * Y * Y);
+    const mdl_t *mdl = grd_st->mdl;
+    const uint64_t F = mdl->nftr;
+    const double *x = mdl->theta;
+    const uint32_t Y = mdl->nlbl;
+    const uint32_t T = tok->len;
+    double (*psi)[F] = (void *) grd_st->psi;
+    for (uint32_t t = 0; t < T; t++) {
+        const pos_t *pos = &(tok[t]);
+        for (uint32_t y = 0; y < Y; y++) {
+            double sum = 0.0;
+            for (uint32_t n = 0; n < pos->ucnt; n++) {
+                const uint64_t o = pos->uobs[n];
+                sum += x[mdl->uoff[o] + y];
+            }
+            for (uint32_t yp = 0; yp < Y; yp++)
+                (*psi)[t][yp][y] = sum;
+        }
+    }
+    for (uint32_t t = 1; t < T; t++) {
+        const pos_t *pos = &(tok->pos[t]);
+        for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
+            for (uint32_t y = 0; y < Y; y++, d++) {
+                double sum = 0.0;
+                for (uint32_t n = 0; n < pos->bcnt; n++) {
+                    const uint64_t o = pos->bobs[n];
+                    sum += x[mdl->boff[o] + d];
+                    if (sum > 0.0)
+                        info("sum of {*psi}[%u][%u][%u] is %f", t, yp, y, sum);
+                }
+                (*psi)[t][yp][y] += sum;
+            }
+        }
+    }
+    xvm_expma((double *) psi, (double *) psi, 0.0, (uint64_t) T * Y * Y);
 }
+*/
 
 /* grd_spdopsi:
  *   For the sparse version, we keep the two sum separate so we will have
@@ -161,50 +165,6 @@ void grd_fldopsi(grd_st_t *grd_st, const tok_t *tok) {
  *          one. (here also this can be done efficiently with vector
  *          maths)
  */
-void grd_spdopsi(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const double  *x = mdl->theta;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
-	double    *psival        =         grd_st->psi;
-	uint32_t  *psiyp         =         grd_st->psiyp;
-	uint32_t (*psiidx)[T][Y] = (void *)grd_st->psiidx;
-	uint32_t  *psioff        =         grd_st->psioff;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		for (uint32_t y = 0; y < Y; y++) {
-			double sum = 0.0;
-			for (uint32_t n = 0; n < pos->ucnt; n++) {
-				const uint64_t o = pos->uobs[n];
-				sum += x[mdl->uoff[o] + y];
-			}
-			(*psiuni)[t][y] = sum;
-		}
-	}
-	uint32_t off = 0;
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		psioff[t] = off;
-		for (uint32_t y = 0, nnz = 0; y < Y; y++) {
-			for (uint32_t yp = 0; yp < Y; yp++) {
-				double sum = 0.0;
-				for (uint32_t n = 0; n < pos->bcnt; n++) {
-					const uint64_t o = pos->bobs[n];
-					sum += x[mdl->boff[o] + yp * Y + y];
-				}
-				if (sum == 0.0)
-					continue;
-				psiyp [off] = yp;
-				psival[off] = sum;
-				nnz++, off++;
-			}
-			(*psiidx)[t][y] = nnz;
-		}
-	}
-	xvm_expma((double *)psiuni, (double *)psiuni, 0.0, (uint64_t)T * Y);
-	xvm_expma((double *)psival, (double *)psival, 1.0, off);
-}
 
 /* grd_flfwdbwd:
  *   Now, we go to the forward-backward algorithm. As this part of the code rely
@@ -227,358 +187,204 @@ void grd_spdopsi(grd_st_t *grd_st, const tok_t *tok) {
  *   with α-scale_t the scaling factor used for the α vector at position t
  *   in the forward recursion.
  */
-void grd_flfwdbwd(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint64_t Y = mdl->nlbl;
-	const uint64_t F = mdl->nftr;
-	const uint32_t T = tok->len;
-	const uint64_t H = mdl->nfws;
-	const uint64_t
-	const double (*psi)[F] = (void *)grd_st->psi;
-	double (*alpha)[T][] = (void *)grd_st->alpha;
-	double (*beta )[T][Y] = (void *)grd_st->beta;
-	double  *scale        =         grd_st->scale;
-	double  *unorm        =         grd_st->unorm;
-	double  *bnorm        =         grd_st->bnorm;
-	for (uint32_t y = 0; y < Y; y++)
-		(*alpha)[0][y] = (*psi)[0][0][y];
-	scale[0] = xvm_unit((*alpha)[0], (*alpha)[0], Y);
-	for (uint32_t t = 1; t < grd_st->last + 1; t++) {
-		for (uint32_t y = 0; y < Y; y++) {
-			double sum = 0.0;
-			for (uint32_t yp = 0; yp < Y; yp++)
-				sum += (*alpha)[t - 1][yp] * (*psi)[t][yp][y];
-			(*alpha)[t][y] = sum;
-		}
-		scale[t] = xvm_unit((*alpha)[t], (*alpha)[t], Y);
-	}
-	for (uint32_t yp = 0; yp < Y; yp++)
-		(*beta)[T - 1][yp] = 1.0 / Y;
-	for (uint32_t t = T - 1; t > grd_st->first; t--) {
-		for (uint32_t yp = 0; yp < Y; yp++) {
-			double sum = 0.0;
-			for (uint32_t y = 0; y < Y; y++)
-				sum += (*beta)[t][y] * (*psi)[t][yp][y];
-			(*beta)[t - 1][yp] = sum;
-		}
-		xvm_unit((*beta)[t - 1], (*beta)[t - 1], Y);
-	}
-	for (uint32_t t = 0; t < T; t++) {
-		double z = 0.0;
-		for (uint32_t y = 0; y < Y; y++)
-			z += (*alpha)[t][y] * (*beta)[t][y];
-		unorm[t] = 1.0 / z;
-		bnorm[t] = scale[t] / z;
-	}
+void grd_fwd(grd_st_t *grd_st, const tok_t *tok) {
+    const mdl_t *mdl = grd_st->mdl;
+    const uint32_t T = tok->len;
+    const uint64_t A = mdl->nfws;
+    const int32_t S = mdl->reader->maxSegment;
+    // const double (*psi)[F] = (void *) grd_st->psi;
+    double (*alpha)[T + 1][A] = (void *) grd_st->alpha;
+    // double (*beta )[T + 1][B] = (void *) grd_st->beta;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+
+    uint32_t i, j;
+    uint64_t featId;
+    id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
+    for (i = 1; i < A; ++i)
+        // for (j = 0; j <= T; ++j)
+        (*alpha)[0][i] = -INFINITY;
+    (*alpha)[0][0] = 0.0;
+    // scale[0] = xvm_unit((*alpha)[0], (*alpha)[0], Y);
+    for (j = 0; j < T; ++j) {
+        for (i = 0; i < A; i++) {
+            (*alpha)[j + 1][i] = -INFINITY;
+            int y = mdl->lastForwardStateLabel[i];
+            int maxmem = y == -1 ? 0 : mdl->reader->maxMemory[y];
+            transition_map_t prevState = mdl->forwardTransition[i];
+            int d = 0;
+            while (d < maxmem && d <= j) {
+                id_map_t observationMapjd = (*obMap)[j - d][d];
+                for (int l = 0; l < prevState.len; ++l) {
+                    uint64_t pkId = prevState.idsOne[l];
+                    uint64_t pkyId = prevState.idsTwo[l];
+                    double featureScore = 0.0;
+                    for (uint32_t patIndex = 0; patIndex < mdl->allSuffixes[pkyId].len; ++patIndex) {
+                        for (uint32_t obId = 0; obId < observationMapjd.len; ++obId) {
+                            uint64_t patId = mdl->allSuffixes[pkyId].ids[patIndex];
+                            featId = (*featureMap)[patId][observationMapjd.ids[obId]];
+                            featureScore += featId > 0 ? mdl->theta[featId] : 0;
+                        }
+                    }
+                    (*alpha)[j + 1][i] = logSumExp((*alpha)[j + 1][i], (*alpha)[j - d][pkId] + featureScore);
+                }
+                ++d;
+            }
+
+        }
+        // scale[j] = xvm_unit((*alpha)[j], (*alpha)[j], A);
+    }
+    return;
 }
 
-/* grd_spfwdbwd:
- *   And the sparse version which is a bit more cmoplicated but follow the same
- *   general path. First the forward recursion
- *       | α_1(y) = Ψ_1(y,x)
- *       | α_t(y) = Ψ_t(y,x) * (   ∑_{y'} α_{t-1}(y')
- *                               + ∑_{y'} α_{t-1}(y') * (Ψ_t(y',y,x) - 1) )
- *   The inner part contains two sums, the first one will be 1.0 as we scale the
- *   α vectors, and the second is a sparse matrix multiplication who need less
- *   than |Y|x|Y| multiplication if the matrix is really sparse, so we will gain
- *   here.
- *   Next come the backward recursion which is very similar
- *       | β_T(y') = 1
- *       | β_t(y') = ∑_y v_{t+1}(y) + ∑_y v_{t+1}(y) * (Ψ_{t+1}(y',y,x) - 1)
- *   with
- *       v_{t+1}(y) = β_{t+1}(y) * Ψ_{t+1}(y,x)
- *   And here also we reduce the number of multiplication if the matrix is
- *   really sparse.
- */
-void grd_spfwdbwd(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint64_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	const double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
-	const double    *psival        =         grd_st->psi;
-	const uint32_t  *psiyp         =         grd_st->psiyp;
-	const uint32_t (*psiidx)[T][Y] = (void *)grd_st->psiidx;
-	const uint32_t  *psioff        =         grd_st->psioff;
-	double (*alpha)[T][Y] = (void *)grd_st->alpha;
-	double (*beta )[T][Y] = (void *)grd_st->beta;
-	double  *scale        =         grd_st->scale;
-	double  *unorm        =         grd_st->unorm;
-	double  *bnorm        =         grd_st->bnorm;
-	for (uint32_t y = 0; y < Y; y++)
-		(*alpha)[0][y] = (*psiuni)[0][y];
-	scale[0] = xvm_unit((*alpha)[0], (*alpha)[0], Y);
-	for (uint32_t t = 1; t < grd_st->last + 1; t++) {
-		for (uint32_t y = 0; y < Y; y++)
-			(*alpha)[t][y] = 1.0;
-		const uint32_t off = psioff[t];
-		for (uint32_t n = 0, y = 0; n < (*psiidx)[t][Y - 1]; ) {
-			while (n >= (*psiidx)[t][y])
-				y++;
-			while (n < (*psiidx)[t][y]) {
-				const uint32_t yp = psiyp [off + n];
-				const double   v  = psival[off + n];
-				(*alpha)[t][y] += (*alpha)[t - 1][yp] * v;
-				n++;
-			}
-		}
-		for (uint32_t y = 0; y < Y; y++)
-			(*alpha)[t][y] *= (*psiuni)[t][y];
-		scale[t] = xvm_unit((*alpha)[t], (*alpha)[t], Y);
-	}
-	for (uint32_t yp = 0; yp < Y; yp++)
-		(*beta)[T - 1][yp] = 1.0 / Y;
-	for (uint32_t t = T - 1; t > grd_st->first; t--) {
-		double sum = 0.0, tmp[Y];
-		for (uint32_t y = 0; y < Y; y++) {
-			tmp[y] = (*beta)[t][y] * (*psiuni)[t][y];
-			sum += tmp[y];
-		}
-		for (uint32_t y = 0; y < Y; y++)
-			(*beta)[t - 1][y] = sum;
-		const uint32_t off = psioff[t];
-		for (uint32_t n = 0, y = 0; n < (*psiidx)[t][Y - 1]; ) {
-			while (n >= (*psiidx)[t][y])
-				y++;
-			while (n < (*psiidx)[t][y]) {
-				const uint32_t yp = psiyp [off + n];
-				const double   v  = psival[off + n];
-				(*beta)[t - 1][yp] += v * tmp[y];
-				n++;
-			}
-		}
-		xvm_unit((*beta)[t - 1], (*beta)[t - 1], Y);
-	}
-	for (uint32_t t = 0; t < T; t++) {
-		double z = 0.0;
-		for (uint32_t y = 0; y < Y; y++)
-			z += (*alpha)[t][y] * (*beta)[t][y];
-		unorm[t] = 1.0 / z;
-		bnorm[t] = scale[t] / z;
-	}
+void grd_bwd(grd_st_t *grd_st, const tok_t *tok) {
+    const mdl_t *mdl = grd_st->mdl;
+    const uint64_t Y = mdl->nlbl;
+    const uint32_t T = tok->len;
+    const uint64_t B = mdl->nbws;
+    const int32_t S = mdl->reader->maxSegment;
+    double (*beta )[T + 1][B] = (void *) grd_st->beta;
+    // double *scale = grd_st->scale;
+    // double *unorm = grd_st->unorm;
+    // double *bnorm = grd_st->bnorm;
+    id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+    int i, j, y, skId, minseq, d;
+    double featureScore;
+    uint64_t patId, featId;
+    // id_map_t *observationMapjd = NULL;
+    // uint64_t *skIds;
+
+    for (j = T; j >= 0; --j) {
+        for (i = 0; i < B; ++i) {
+            (*beta)[j][i] = 0;
+        }
+    }
+
+    for (j = T - 1; j > 0; --j) {
+        for (i = 0; i < B; ++i) {
+            (*beta)[j][i] = -INFINITY;
+            for (y = 0; y < Y; ++y) {
+                skId = mdl->backwardTransition[i * Y + y];
+                if (skId != -1) {
+                    minseq = min((uint32_t) mdl->reader->maxMemory[y], T - j);
+                    for (d = 0; d < minseq; ++d) {
+                        id_map_t *observationMapjd = &((*obMap)[j][d]);
+                        featureScore = 0.0;
+                        for (uint32_t patIndex = 0; patIndex < mdl->allSuffixes[skId].len; ++patIndex) {
+                            for (uint32_t obId = 0; obId < observationMapjd->len; ++obId) {
+                                patId = mdl->allSuffixes[skId].ids[patIndex];
+                                featId = (*featureMap)[patId][observationMapjd->ids[obId]];
+                                featureScore += featId != 0 ? mdl->theta[featId] : 0;
+                            }
+                        }
+                        (*beta)[j][i] = logSumExp((*beta)[j][i], (*beta)[j + d + 1][skId] + featureScore);
+                    }
+                }
+            }
+        }
+    }
+    return;
 }
 
-/* grd_flupgrad:
- *   Now, we have all we need to compute the gradient of the negative log-
- *   likelihood
- *       ∂-L(θ)
- *       ------ =    ∑_t ∑_{(y',y)} f_k(y',y,x_t) p_θ(y_{t-1}=y',y_t=y|x)
- *        ∂θ_k     - ∑_t f_k(y_{t-1},y_t,x_t)
- *
- *   The first term is the expectation of f_k under the model distribution and
- *   the second one is the expectation of f_k under the empirical distribution.
- *
- *   The second is very simple to compute as we just have to sum over the
- *   actives observations in the sequence and will be done by the grd_subemp.
- *   The first one is more tricky as it involve computing the probability p_θ.
- *   This is where we use all the previous computations. Again we separate the
- *   computations for unigrams and bigrams here.
- *
- *   These probabilities are given by
- *       p_θ(y_t=y|x)            = α_t(y)β_t(y) / Z_θ
- *       p_θ(y_{t-1}=y',y_t=y|x) = α_{t-1}(y') Ψ_t(y',y,x) β_t(y) / Z_θ
- *   but we have to remember that, since we have scaled the α and β, we have to
- *   use the local normalization constants.
- *
- *   We must also take care of not clearing previous value of the gradient
- *   vector but just adding the contribution of this sequence. This allow to
- *   compute it easily the gradient over more than one sequence.
- */
-void grd_flupgrad(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	const double (*psi  )[T][Y][Y] = (void *)grd_st->psi;
-	const double (*alpha)[T][Y]    = (void *)grd_st->alpha;
-	const double (*beta )[T][Y]    = (void *)grd_st->beta;
-	const double  *unorm           =         grd_st->unorm;
-	const double  *bnorm           =         grd_st->bnorm;
-	double *g = grd_st->g;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		for (uint32_t y = 0; y < Y; y++) {
-			double e = (*alpha)[t][y] * (*beta)[t][y] * unorm[t];
-			for (uint32_t n = 0; n < pos->ucnt; n++) {
-				const uint64_t o = pos->uobs[n];
-				atm_inc(g + mdl->uoff[o] + y, e);
-			}
-		}
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
-			for (uint32_t y = 0; y < Y; y++, d++) {
-				double e = (*alpha)[t - 1][yp] * (*beta)[t][y]
-				         * (*psi)[t][yp][y] * bnorm[t];
-				for (uint32_t n = 0; n < pos->bcnt; n++) {
-					const uint64_t o = pos->bobs[n];
-					atm_inc(g + mdl->boff[o] + d, e);
-				}
-			}
-		}
-	}
+void grd_logZx(grd_st_t *grd_st, const tok_t *tok) {
+    const mdl_t *mdl = grd_st->mdl;
+    const uint64_t A = mdl->nfws;
+    const uint32_t T = tok->len;
+    const double (*alpha)[T+1][A] = (void *)grd_st->alpha;
+    double logZx = -INFINITY;
+    for (uint32_t i = 0; i < A; ++i) {
+        logZx = logSumExp(logZx, (*alpha)[T][i]);
+    }
+    grd_st->logZx = logZx;
+    return;
 }
 
-/* grd_spupgrad:
- *   The sparse matrix make things a bit more complicated here as we cannot
- *   directly multiply with the original Ψ_t(y',y,x) because we have split it
- *   two components and the second one is sparse, so we have to make a quite
- *   complex workaround to fix that. We have to explicitly build the expectation
- *   matrix. We first fill it with the unigram component and next multiply it
- *   with the bigram one.
- */
-void grd_spupgrad(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	const double   (*psiuni)[T][Y] = (void *)grd_st->psiuni;
-	const double    *psival        =         grd_st->psi;
-	const uint32_t  *psiyp         =         grd_st->psiyp;
-	const uint32_t (*psiidx)[T][Y] = (void *)grd_st->psiidx;
-	const uint32_t  *psioff        =         grd_st->psioff;
-	const double   (*alpha)[T][Y]  = (void *)grd_st->alpha;
-	const double   (*beta )[T][Y]  = (void *)grd_st->beta;
-	const double    *unorm         =         grd_st->unorm;
-	const double    *bnorm         =         grd_st->bnorm;
-	double *g = grd_st->g;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		for (uint32_t y = 0; y < Y; y++) {
-			double e = (*alpha)[t][y] * (*beta)[t][y] * unorm[t];
-			for (uint32_t n = 0; n < pos->ucnt; n++) {
-				const uint64_t o = pos->uobs[n];
-				atm_inc(g + mdl->uoff[o] + y, e);
-			}
-		}
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		// We build the expectation matrix
-		double e[Y][Y];
-		for (uint32_t yp = 0; yp < Y; yp++)
-			for (uint32_t y = 0; y < Y; y++)
-				e[yp][y] = (*alpha)[t - 1][yp] * (*beta)[t][y]
-				         * (*psiuni)[t][y] * bnorm[t];
-		const uint32_t off = psioff[t];
-		for (uint32_t n = 0, y = 0; n < (*psiidx)[t][Y - 1]; ) {
-			while (n >= (*psiidx)[t][y])
-				y++;
-			while (n < (*psiidx)[t][y]) {
-				const uint32_t yp = psiyp [off + n];
-				const double   v  = psival[off + n];
-				e[yp][y] += e[yp][y] * v;
-				n++;
-			}
-		}
-		// Add the expectation over the model distribution
-		for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
-			for (uint32_t y = 0; y < Y; y++, d++) {
-				for (uint32_t n = 0; n < pos->bcnt; n++) {
-					const uint64_t o = pos->bobs[n];
-					atm_inc(g + mdl->boff[o] + d, e[yp][y]);
-				}
-			}
-		}
-	}
+void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
+    const mdl_t *mdl = grd_st->mdl;
+    const uint64_t F = mdl->nftr;
+    const uint32_t T = tok->len;
+    const uint64_t A = mdl->nfws;
+    const uint64_t B = mdl->nbws;
+    const uint64_t P = mdl->npats;
+    const int32_t S = mdl->reader->maxSegment;
+
+    double (*beta)[T + 1][B] = (void *) grd_st->beta;
+    double *expec = grd_st->expec;
+    double (*alpha)[T + 1][A] = (void *) grd_st->alpha;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+    id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
+    id_map_t *observationMapjd;
+    uint32_t obId;
+
+    int i, j, y, d, maxmem, maxLen, patIndex;
+    double featureScore;
+    uint64_t piId, piyId, zId, patId, featId;
+    double (*marginal)[P][T][S] = (void *)grd_st->marginal;
+    (*marginal)[0][0][0] = 1;
+    for (i = 0; i < F; ++i) {
+        expec[i] = 0;
+    }
+    for (zId = 0; zId < P; ++zId) {
+        y = mdl->lastPatternLabel[zId];
+        maxmem = y == -1 ? 0 : mdl->reader->maxMemory[y];
+        for (i = 0; i < T; ++i) {
+            maxLen = min(maxmem, (int)T-i);
+            for (d = 0; d < S; ++d) {
+                (*marginal)[zId][i][d] = 0;
+            }
+            for (d = 0; d < maxLen; ++d) {
+                observationMapjd = &((*obMap)[i][d]);
+                (*marginal)[zId][i][d] = -INFINITY;
+                for (j = 0; j < mdl->patternTransition[zId].len; ++j) {
+                    piId = mdl->patternTransition[zId].idsOne[j];
+                    piyId = mdl->patternTransition[zId].idsTwo[j];
+                    featureScore = 0.0;
+                    for (patIndex = 0; patIndex < mdl->allSuffixes[piyId].len; ++patIndex) {
+                        for (obId = 0; obId < observationMapjd->len; ++obId) {
+                            patId = mdl->allSuffixes[piyId].ids[patIndex];
+                            featId = (*featureMap)[patId][observationMapjd->ids[obId]];
+                            featureScore += (featId != 0) ? mdl->theta[featId] : 0;
+                        }
+                    }
+                    (*marginal)[zId][i][d] = logSumExp((*marginal)[zId][i][d], (*alpha)[i][piId] + (*beta)[i + d + 1][piyId] + featureScore);
+                }
+                (*marginal)[zId][i][d] = exp((*marginal)[zId][i][d] - grd_st->logZx);
+                for (obId = 0; obId < observationMapjd->len; ++obId) {
+                    featId = (*featureMap)[zId][observationMapjd->ids[obId]];
+                    expec[featId] +=  featId != 0 ? (*marginal)[zId][i][d] : 0;
+                }
+            }
+        }
+    }
+    // free(observationMapjd);
+    return;
 }
 
-/* grd_subemp:
- *   Substract from the gradient, the expectation over the empirical
- *   distribution. This is the second step of the gradient computation shared
- *   by the non-sparse and sparse version.
- */
-void grd_subemp(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	double *g = grd_st->g;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		const uint32_t y = tok->pos[t].lbl;
-		for (uint32_t n = 0; n < pos->ucnt; n++)
-			atm_inc(g + mdl->uoff[pos->uobs[n]] + y, -1.0);
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		const uint32_t yp = tok->pos[t - 1].lbl;
-		const uint32_t y  = tok->pos[t    ].lbl;
-		const uint32_t d  = yp * Y + y;
-		for (uint32_t n = 0; n < pos->bcnt; n++)
-			atm_inc(g + mdl->boff[pos->bobs[n]] + d, -1.0);
-	}
+void grd_exp(grd_st_t *grd_st, const tok_t *tok) {
+
 }
 
-/* grd_logloss:
- *   And the final touch, the computation of the negative log-likelihood
- *       -L(θ) = log(Z_θ) - ∑_t ∑_k θ_k f_k(y_{t-1}, y_t, x_t)
- *
- *   The numerical problems show again here as we cannot compute the Z_θ
- *   directly for the same reason we have done scaling. Fortunately, there is a
- *   way to directly compute his logarithm
- *       log(Z_θ) = log( ∑_y α_t(y) β_t(y) )
- *                - ∑_{i=1..t} log(α-scale_i)
- *                - ∑_{i=t..T} log(β-scale_i)
- *   for any value of t.
- *
- *   So we can compute it at any position in the sequence but the last one is
- *   easier as the value of β_T(y) and β-scale_T are constant and cancel out.
- *   This is why we have just keep the α-scale_t values.
- *
- *   Now, we have the first term of -L(θ). We have now to substract the second
- *   one. As we have done for the computation of Ψ, we separate the sum over K
- *   in two sums, one for unigrams and one for bigrams. And, as here also the
- *   weights will be non-nul only for observations present in the sequence, we
- *   sum only over these ones.
- */
-void grd_logloss(grd_st_t *grd_st, const tok_t *tok) {
-	const mdl_t *mdl = grd_st->mdl;
-	const double  *x = mdl->theta;
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = tok->len;
-	const double (*alpha)[T][Y] = (void *)grd_st->alpha;
-	const double  *scale        =         grd_st->scale;
-	double logz = 0.0;
-	for (uint32_t y = 0; y < Y; y++)
-		logz += (*alpha)[T - 1][y];
-	logz = log(logz);
-	for (uint32_t t = 0; t < T; t++)
-		logz -= log(scale[t]);
-	double lloss = logz;
-	for (uint32_t t = 0; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		const uint32_t y = tok->pos[t].lbl;
-		for (uint32_t n = 0; n < pos->ucnt; n++)
-			lloss -= x[mdl->uoff[pos->uobs[n]] + y];
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		const pos_t *pos = &(tok->pos[t]);
-		const uint32_t yp = tok->pos[t - 1].lbl;
-		const uint32_t y  = tok->pos[t    ].lbl;
-		const uint32_t d  = yp * Y + y;
-		for (uint32_t n = 0; n < pos->bcnt; n++)
-			lloss -= x[mdl->boff[pos->bobs[n]] + d];
-	}
-	grd_st->lloss += lloss;
+void grd_loss(grd_st_t *grd_st, const tok_t *tok) {
+    const mdl_t *mdl = grd_st->mdl;
+    const uint64_t F = mdl->nftr;
+    for (uint64_t i = 0; i < F; ++i) {
+        grd_st->g[i] = grd_st->expec[i] - mdl->empiricalScore[i];
+        grd_st->lloss -= mdl->theta[i] * tok->empiricalScore[i];
+    }
+    grd_st->lloss += grd_st->logZx;
 }
 
-/* grd_docrf:
- *   This function compute the gradient and value of the negative log-likelihood
- *   of the model over a single training sequence.
- *
- *   This function will not clear the gradient before computation, but instead
- *   just accumulate the values for the given sequence in it. This allow to
- *   easily compute the gradient over a set of sequences.
- */
 void grd_docrf(grd_st_t *grd_st, const tok_t *tok) {
-	// const mdl_t *mdl = grd_st->mdl;
-	grd_st->first = 0;
-	grd_st->last  = tok->len - 1;
+    // const mdl_t *mdl = grd_st->mdl;
+    grd_st->first = 0;
+    grd_st->last = tok->len - 1;
 
-	grd_fldopsi(grd_st, tok);
-	grd_flfwdbwd(grd_st, tok);
-	grd_flupgrad(grd_st, tok);
+    grd_fwd(grd_st, tok);
+    grd_bwd(grd_st, tok);
+    grd_logZx(grd_st, tok);
 
-	grd_subemp(grd_st, tok);
-	grd_logloss(grd_st, tok);
+    grd_marginal_exp(grd_st, tok);
+    grd_loss(grd_st, tok);
 }
 
 /******************************************************************************
@@ -606,43 +412,39 @@ void grd_docrf(grd_st_t *grd_st, const tok_t *tok) {
  *   linear-chain codepath can be computed for a sequence of the given length.
  */
 void grd_stcheck(grd_st_t *grd_st, uint32_t len) {
-	// Check if user ask for clearing the state tracker or if he requested a
-	// bigger tracker. In this case we have to free the previous allocated
-	// memory.
-	if (len == 0 || (len > grd_st->len && grd_st->len != 0)) {
-		if (grd_st->mdl->opt->sparse) {
-			xvm_free(grd_st->psiuni); grd_st->psiuni = NULL;
-			free(grd_st->psiyp);      grd_st->psiyp  = NULL;
-			free(grd_st->psiidx);     grd_st->psiidx = NULL;
-			free(grd_st->psioff);     grd_st->psioff = NULL;
-		}
-		xvm_free(grd_st->psi);   grd_st->psi   = NULL;
-		xvm_free(grd_st->alpha); grd_st->alpha = NULL;
-		xvm_free(grd_st->beta);  grd_st->beta  = NULL;
-		xvm_free(grd_st->unorm); grd_st->unorm = NULL;
-		xvm_free(grd_st->bnorm); grd_st->bnorm = NULL;
-		xvm_free(grd_st->scale); grd_st->scale = NULL;
-		grd_st->len = 0;
-	}
-	if (len == 0 || len <= grd_st->len)
-		return;
-	// If we are here, we have to allocate a new state. This is simple, we
-	// just have to take care of the special case for sparse mode.
-	const uint32_t Y = grd_st->mdl->nlbl;
-	const uint32_t T = len;
-	grd_st->psi   = xvm_new(T * Y * Y);
-	grd_st->alpha = xvm_new(T * Y);
-	grd_st->beta  = xvm_new(T * Y);
-	grd_st->scale = xvm_new(T);
-	grd_st->unorm = xvm_new(T);
-	grd_st->bnorm = xvm_new(T);
-	if (grd_st->mdl->opt->sparse) {
-		grd_st->psiuni = xvm_new(T * Y);
-		grd_st->psiyp  = xmalloc(sizeof(uint32_t) * T * Y * Y);
-		grd_st->psiidx = xmalloc(sizeof(uint32_t) * T * Y);
-		grd_st->psioff = xmalloc(sizeof(uint32_t) * T);
-	}
-	grd_st->len = len;
+    // Check if user ask for clearing the state tracker or if he requested a
+    // bigger tracker. In this case we have to free the previous allocated
+    // memory.
+    if (len == 0 || (len > grd_st->len && grd_st->len != 0)) {
+        xvm_free(grd_st->marginal);
+        grd_st->marginal = NULL;
+        xvm_free(grd_st->alpha);
+        grd_st->alpha = NULL;
+        xvm_free(grd_st->beta);
+        grd_st->beta = NULL;
+        xvm_free(grd_st->unorm);
+        grd_st->unorm = NULL;
+        xvm_free(grd_st->bnorm);
+        grd_st->bnorm = NULL;
+        xvm_free(grd_st->scale);
+        grd_st->scale = NULL;
+        grd_st->len = 0;
+    }
+    if (len == 0 || len <= grd_st->len)
+        return;
+    // If we are here, we have to allocate a new state. This is simple, we
+    // just have to take care of the special case for sparse mode.
+    const uint64_t F = grd_st->mdl->nftr;
+    const uint32_t T = len;
+    const uint64_t A = grd_st->mdl->nfws;
+    const uint64_t B = grd_st->mdl->nbws;
+    const int32_t S = grd_st->mdl->reader->maxSegment;
+    const uint64_t P = grd_st->mdl->npats;
+    grd_st->marginal = xvm_new(P * T * S);
+    grd_st->alpha = xvm_new((T+1) * A);
+    grd_st->beta = xvm_new((T+1) * B);
+    grd_st->expec = xvm_new(F);
+    grd_st->len = len;
 }
 
 /* grd_stnew:
@@ -650,29 +452,25 @@ void grd_stcheck(grd_st_t *grd_st, uint32_t len) {
  *   the longest sequence present in the data set.
  */
 grd_st_t *grd_stnew(mdl_t *mdl, double *g) {
-	grd_st_t *grd_st  = xmalloc(sizeof(grd_st_t));
-	grd_st->mdl    = mdl;
-	grd_st->len    = 0;
-	grd_st->g      = g;
-	grd_st->psi    = NULL;
-	grd_st->psiuni = NULL;
-	grd_st->psiyp  = NULL;
-	grd_st->psiidx = NULL;
-	grd_st->psioff = NULL;
-	grd_st->alpha  = NULL;
-	grd_st->beta   = NULL;
-	grd_st->unorm  = NULL;
-	grd_st->bnorm  = NULL;
-	grd_st->scale  = NULL;
-	return grd_st;
+    grd_st_t *grd_st = xmalloc(sizeof(grd_st_t));
+    grd_st->mdl = mdl;
+    grd_st->len = 0;
+    grd_st->g = g;
+    grd_st->marginal = NULL;
+    grd_st->alpha = NULL;
+    grd_st->beta = NULL;
+    grd_st->unorm = NULL;
+    grd_st->bnorm = NULL;
+    grd_st->scale = NULL;
+    return grd_st;
 }
 
 /* grd_stfree:
  *   Free all memory used by gradient computation.
  */
 void grd_stfree(grd_st_t *grd_st) {
-	grd_stcheck(grd_st, 0);
-	free(grd_st);
+    grd_stcheck(grd_st, 0);
+    free(grd_st);
 }
 
 /* grd_dospl:
@@ -680,9 +478,9 @@ void grd_stfree(grd_st_t *grd_st) {
  *   optimised codepath and classical one depending of the sample.
  */
 void grd_dospl(grd_st_t *grd_st, const tok_t *tok) {
-	grd_stcheck(grd_st, tok->len);
-	rdr_t *rdr = grd_st->mdl->reader;
-	grd_docrf(grd_st, tok);
+    grd_stcheck(grd_st, tok->len);
+    // rdr_t *rdr = grd_st->mdl->reader;
+    grd_docrf(grd_st, tok);
 }
 
 /* grd_new:
@@ -690,34 +488,34 @@ void grd_dospl(grd_st_t *grd_st, const tok_t *tok) {
  *   compute gradient over the full data set and store it in the vector <g>.
  */
 grd_t *grd_new(mdl_t *mdl, double *g) {
-	const uint32_t W = mdl->opt->nthread;
-	grd_t *grd = xmalloc(sizeof(grd_t));
-	grd->mdl = mdl;
-	grd->grd_st = xmalloc(sizeof(grd_st_t *) * W);
+    const uint32_t W = mdl->opt->nthread;
+    grd_t *grd = xmalloc(sizeof(grd_t));
+    grd->mdl = mdl;
+    grd->grd_st = xmalloc(sizeof(grd_st_t *) * W);
 #ifdef ATM_ANSI
-	grd->grd_st[0] = grd_stnew(mdl, g);
-	for (uint32_t w = 1; w < W; w++)
-		grd->grd_st[w] = grd_stnew(mdl, xvm_new(mdl->nftr));
+    grd->grd_st[0] = grd_stnew(mdl, g);
+    for (uint32_t w = 1; w < W; w++)
+        grd->grd_st[w] = grd_stnew(mdl, xvm_new(mdl->nftr));
 #else
-	for (uint32_t w = 0; w < W; w++)
-		grd->grd_st[w] = grd_stnew(mdl, g);
+    for (uint32_t w = 0; w < W; w++)
+        grd->grd_st[w] = grd_stnew(mdl, g);
 #endif
-	return grd;
+    return grd;
 }
 
 /* grd_free:
  *   Free all memory allocated for the given gradient computer object.
  */
 void grd_free(grd_t *grd) {
-	const uint32_t W = grd->mdl->opt->nthread;
+    const uint32_t W = grd->mdl->opt->nthread;
 #ifdef ATM_ANSI
-	for (uint32_t w = 1; w < W; w++)
-		xvm_free(grd->grd_st[w]->g);
+    for (uint32_t w = 1; w < W; w++)
+        xvm_free(grd->grd_st[w]->g);
 #endif
-	for (uint32_t w = 0; w < W; w++)
-		grd_stfree(grd->grd_st[w]);
-	free(grd->grd_st);
-	free(grd);
+    for (uint32_t w = 0; w < W; w++)
+        grd_stfree(grd->grd_st[w]);
+    free(grd->grd_st);
+    free(grd);
 }
 
 /* grd_worker:
@@ -727,26 +525,26 @@ void grd_free(grd_t *grd) {
  */
 static
 void grd_worker(job_t *job, uint32_t id, uint32_t cnt, grd_st_t *grd_st) {
-	unused(id && cnt);
-	mdl_t *mdl = grd_st->mdl;
-	const dat_t *dat = mdl->train;
-	// We first cleanup the gradient and value as our parent don't do it (it
-	// is better to do this also in parallel)
-	grd_st->lloss = 0.0;
+    unused(id && cnt);
+    mdl_t *mdl = grd_st->mdl;
+    const dat_t *dat = mdl->train;
+    // We first cleanup the gradient and value as our parent don't do it (it
+    // is better to do this also in parallel)
+    grd_st->lloss = 0.0;
 #ifdef ATM_ANSI
-	const uint64_t F = mdl->nftr;
-	for (uint64_t f = 0; f < F; f++)
-		grd_st->g[f] = 0.0;
+    const uint64_t F = mdl->nftr;
+    for (uint64_t f = 0; f < F; f++)
+        grd_st->g[f] = 0.0;
 #endif
-	// Now all is ready, we can process our sequences and accumulate the
-	// gradient and inverse log-likelihood
-	uint32_t count, pos;
-	while (mth_getjob(job, &count, &pos)) {
-		for (uint32_t s = pos; !uit_stop && s < pos + count; s++)
-			grd_dospl(grd_st, dat->tok[s]);
-		if (uit_stop)
-			break;
-	}
+    // Now all is ready, we can process our sequences and accumulate the
+    // gradient and inverse log-likelihood
+    uint32_t count, pos;
+    while (mth_getjob(job, &count, &pos)) {
+        for (uint32_t s = pos; !uit_stop && s < pos + count; s++)
+            grd_dospl(grd_st, dat->tok[s]);
+        if (uit_stop)
+            break;
+    }
 }
 
 /* grd_gradient:
@@ -756,51 +554,51 @@ void grd_worker(job_t *job, uint32_t id, uint32_t cnt, grd_st_t *grd_st) {
  *   the gradient of each sequence.
  */
 double grd_gradient(grd_t *grd) {
-	mdl_t *mdl = grd->mdl;
-	const double  *x = mdl->theta;
-	const uint64_t F = mdl->nftr;
-	const uint32_t W = mdl->opt->nthread;
-	double *g = grd->grd_st[0]->g;
+    mdl_t *mdl = grd->mdl;
+    const double *x = mdl->theta;
+    const uint64_t F = mdl->nftr;
+    const uint32_t W = mdl->opt->nthread;
+    double *g = grd->grd_st[0]->g;
 #ifndef ATM_ANSI
-	for (uint64_t f = 0; f < F; f++)
-		g[f] = 0.0;
+    for (uint64_t f = 0; f < F; f++)
+        g[f] = 0.0;
 #endif
-	// All is ready to compute the gradient, we spawn the threads of
-	// workers, each one working on a part of the data. As the gradient and
-	// log-likelihood are additive, computing the final values will be
-	// trivial.
-	mth_spawn((func_t *)grd_worker, W, (void **)grd->grd_st,
-		mdl->train->nseq, mdl->opt->jobsize);
-	if (uit_stop)
-		return -1.0;
-	// All computations are done, it just remain to add all the gradients
-	// and negative log-likelihood from all the workers.
-	double fx = grd->grd_st[0]->lloss;
-	for (uint32_t w = 1; w < W; w++)
-		fx += grd->grd_st[w]->lloss;
+    // All is ready to compute the gradient, we spawn the threads of
+    // workers, each one working on a part of the data. As the gradient and
+    // log-likelihood are additive, computing the final values will be
+    // trivial.
+    mth_spawn((func_t *) grd_worker, W, (void **) grd->grd_st,
+              mdl->train->nseq, mdl->opt->jobsize);
+    if (uit_stop)
+        return -1.0;
+    // All computations are done, it just remain to add all the gradients
+    // and negative log-likelihood from all the workers.
+    double fx = grd->grd_st[0]->lloss;
+    for (uint32_t w = 1; w < W; w++)
+        fx += grd->grd_st[w]->lloss;
 #ifdef ATM_ANSI
-	for (uint32_t w = 1; w < W; w++)
-		for (uint64_t f = 0; f < F; f++)
-			g[f] += grd->grd_st[w]->g[f];
+    for (uint32_t w = 1; w < W; w++)
+        for (uint64_t f = 0; f < F; f++)
+            g[f] += grd->grd_st[w]->g[f];
 #endif
-	// If needed we clip the gradient: setting to 0.0 all coordinates where
-	// the function is 0.0.
-	if (mdl->opt->lbfgs.clip == true)
-		for (uint64_t f = 0; f < F; f++)
-			if (x[f] == 0.0)
-				g[f] = 0.0;
-	// Now we can apply the elastic-net penalty. Depending of the values of
-	// rho1 and rho2, this can in fact be a classical L1 or L2 penalty.
-	const double rho1 = mdl->opt->rho1;
-	const double rho2 = mdl->opt->rho2;
-	double nl1 = 0.0, nl2 = 0.0;
-	for (uint64_t f = 0; f < F; f++) {
-		const double v = x[f];
-		g[f] += rho2 * v;
-		nl1  += fabs(v);
-		nl2  += v * v;
-	}
-	fx += nl1 * rho1 + nl2 * rho2 / 2.0;
-	return fx;
+    // If needed we clip the gradient: setting to 0.0 all coordinates where
+    // the function is 0.0.
+    if (mdl->opt->lbfgs.clip == true)
+        for (uint64_t f = 0; f < F; f++)
+            if (x[f] == 0.0)
+                g[f] = 0.0;
+    // Now we can apply the elastic-net penalty. Depending of the values of
+    // rho1 and rho2, this can in fact be a classical L1 or L2 penalty.
+    const double rho1 = mdl->opt->rho1;
+    const double rho2 = mdl->opt->rho2;
+    double nl1 = 0.0, nl2 = 0.0;
+    for (uint64_t f = 0; f < F; f++) {
+        const double v = x[f];
+        g[f] += rho2 * v;
+        nl1 += fabs(v);
+        nl2 += v * v;
+    }
+    fx += nl1 * rho1 + nl2 * rho2 / 2.0;
+    return fx;
 }
 

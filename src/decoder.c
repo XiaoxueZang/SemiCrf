@@ -1,30 +1,3 @@
-/*
- *      Wapiti - A linear-chain CRF tool
- *
- * Copyright (c) 2009-2013  CNRS
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include <inttypes.h>
 #include <float.h>
 #include <stdint.h>
@@ -64,6 +37,7 @@
  *   we don't need to take the exponential of the scores as the Viterbi decoding
  *   works in log-space.
  */
+
 static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
 	const double  *x = mdl->theta;
 	const uint32_t Y = mdl->nlbl;
@@ -120,7 +94,7 @@ static int tag_expsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
 	}
 	return 0;
 }
-
+*/
 /* tag_memmsc:
  *   Compute the score for viterbi decoding of MEMM models. This use the
  *   previous function to compute the classical score and then normalize them
@@ -144,13 +118,13 @@ static int tag_memmsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
 	}
 	return 1;
 }
-
+*/
 /* tag_postsc:
  *   This function compute score lattice with posteriors. This generally result
  *   in a slightly best labelling and allow to output normalized score for the
  *   sequence and for each labels but this is more costly as we have to perform
  *   a full forward backward instead of just the forward pass.
- */
+ */ /*
 static int tag_postsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
@@ -179,13 +153,13 @@ static int tag_postsc(mdl_t *mdl, const seq_t *seq, double *vpsi) {
 	grd_stfree(grd_st);
 	return 1;
 }
-
+*/
 /* tag_forced:
  *   This function apply correction to the psi table to take account of already
  *   known labels. If a label is known, all arcs leading or comming from other
  *   labels at this position are NULLified and will not be selected by the
  *   decoder.
- */
+ */ /*
 static void tag_forced(mdl_t *mdl, const seq_t *seq, double *vpsi, int op) {
 	const uint32_t Y = mdl->nlbl;
 	const uint32_t T = seq->len;
@@ -216,7 +190,7 @@ static void tag_forced(mdl_t *mdl, const seq_t *seq, double *vpsi, int op) {
 		}
 	}
 }
-
+*/
 /* tag_viterbi:
  *   This function implement the Viterbi algorithm in order to decode the most
  *   probable sequence of labels according to the model. Some part of this code
@@ -305,13 +279,13 @@ void tag_viterbi(mdl_t *mdl, const seq_t *seq,
 	free(vback);
 	xvm_free(vpsi);
 }
-
+*/
 /* tag_nbviterbi:
  *   This function implement the Viterbi algorithm in order to decode the N-most
  *   probable sequences of labels according to the model. It can be used to
  *   compute only the best one and will return the same sequence than the
  *   previous function but will be slower to do it.
- */
+ */ /*
 void tag_nbviterbi(mdl_t *mdl, const seq_t *seq, uint32_t N,
                    uint32_t out[][N], double sc[], double psc[][N]) {
 	const uint32_t Y = mdl->nlbl;
@@ -406,7 +380,7 @@ void tag_nbviterbi(mdl_t *mdl, const seq_t *seq, uint32_t N,
 	free(vback);
 	xvm_free(vpsi);
 }
-
+*/
 /* tag_label:
  *   Label a data file using the current model. This output an almost exact copy
  *   of the input file with an additional column with the predicted label. If
@@ -414,7 +388,7 @@ void tag_nbviterbi(mdl_t *mdl, const seq_t *seq, uint32_t N,
  *   predicted labels will be checked against the provided ones. This will
  *   output error rates during the labelling and detailed statistics per label
  *   at the end.
- */
+ */ /*
 void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
 	qrk_t *lbls = mdl->reader->lbl;
 	const uint32_t Y = mdl->nlbl;
@@ -527,6 +501,7 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
 		}
 	}
 }
+*/
 
 /* eval_t:
  *   This a state tracker used to communicate between the main eval function and
@@ -562,14 +537,14 @@ static void tag_evalsub(job_t *job, uint32_t id, uint32_t cnt, eval_t *eval) {
 	while (mth_getjob(job, &count, &pos)) {
 		for (uint32_t s = pos; s < pos + count; s++) {
 			// Tag the sequence with the viterbi
-			const seq_t *seq = dat->seq[s];
+			const tok_t *seq = dat->tok[s];
 			const uint32_t T = seq->len;
 			uint32_t *out = xmalloc(sizeof(uint32_t) * T);
 			tag_viterbi(mdl, seq, out, NULL, NULL);
 			// And check for eventual (probable ?) errors
 			bool err = false;
 			for (uint32_t t = 0; t < T; t++)
-				if (seq->pos[t].lbl != out[t])
+				if (seq->lbl[t] != out[t])
 					eval->terr++, err = true;
 			eval->tcnt += T;
 			eval->scnt += 1;

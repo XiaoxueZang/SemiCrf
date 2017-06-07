@@ -23,9 +23,9 @@
 mdl_t *mdl_new(rdr_t *rdr) {
     mdl_t *mdl = xmalloc(sizeof(mdl_t));
     mdl->nlbl = mdl->nobs = mdl->nftr = mdl->npats = 0;
-    // mdl->kind = NULL;
-    mdl->uoff = mdl->boff = NULL;
+    mdl->featureMap = NULL;
     mdl->theta = NULL;
+    mdl->empiricalScore = NULL;
     mdl->train = mdl->devel = NULL;
     mdl->reader = rdr;
     mdl->werr = NULL;
@@ -43,8 +43,10 @@ mdl_t *mdl_new(rdr_t *rdr) {
  */
 void mdl_free(mdl_t *mdl) {
     // free(mdl->kind);
-    free(mdl->uoff);
-    free(mdl->boff);
+    free(mdl->lastForwardStateLabel);
+    free(mdl->backwardTransition);
+    free(mdl->lastPatternLabel);
+    free(mdl->patternBackwardId);
     if (mdl->theta != NULL)
         xvm_free(mdl->theta);
     if (mdl->train != NULL)
@@ -90,6 +92,7 @@ void mdl_sync(mdl_t *mdl) {
     qrk_lock(mdl->reader->lbl, true);
     qrk_lock(mdl->reader->obs, true);
     qrk_lock(mdl->reader->pats, true);
+    qrk_lock(mdl->reader->featList, true);
     qrk_lock(mdl->reader->forwardStateMap, true);
     qrk_lock(mdl->reader->backwardStateMap, true);
     // If model is already synchronized, do nothing and just return
@@ -97,28 +100,7 @@ void mdl_sync(mdl_t *mdl) {
         return;
     if (Y == 0 || O == 0)
         fatal("cannot synchronize an empty model");
-    // If new labels was added, we have to discard all the model. In this
-    // case we also display a warning as this is probably not expected by
-    // the user. If only new observations was added, we will try to expand
-    // the model.
-    /*
-    uint64_t oldF = mdl->nftr;
-    uint64_t oldO = mdl->nobs;
-    if (mdl->nlbl != Y && mdl->nlbl != 0) {
-        warning("labels count changed, discarding the model");
-        free(mdl->kind);
-        mdl->kind = NULL;
-        free(mdl->uoff);
-        mdl->uoff = NULL;
-        free(mdl->boff);
-        mdl->boff = NULL;
-        if (mdl->theta != NULL) {
-            xvm_free(mdl->theta);
-            mdl->theta = NULL;
-        }
-        oldF = oldO = 0;
-    }
-     */
+
     mdl->npats = P;
     mdl->nlbl = Y;
     mdl->nobs = O;
@@ -132,11 +114,15 @@ void mdl_sync(mdl_t *mdl) {
     mdl->lastPatternLabel = xmalloc(sizeof(int) * P);
     mdl->patternBackwardId = xmalloc(sizeof(int) * P);
     mdl->patternTransition = xmalloc(sizeof(transition_map_t) * P);
+    mdl->empiricalScore = xvm_new(mdl->train->nseq * F);
+    mdl->theta = xvm_new(F);
 
     generateSentenceObs(mdl);
+    generateFeatureMap(mdl);
     buildForwardTransition(mdl);
     buildBackwardTransition(mdl);
     buildPatternTransition(mdl);
+    generateEmpiricalFeatureScore(mdl);
     return;
 }
 
@@ -292,6 +278,30 @@ void buildPatternTransition(mdl_t *mdl) {
     }
 }
 
+void generateFeatureMap(mdl_t *mdl) {
+    uint16_t size = 50;
+    char *f = xmalloc(sizeof(char) * size);
+    uint64_t i, j;
+    mdl->featureMap = xmalloc(sizeof(uint64_t) * mdl->npats * mdl->nobs);
+
+
+    for (i = 0; i < mdl->npats; ++i) {
+        for (j = 0; j < mdl->nobs; ++j) {
+            mdl->featureMap[i * (mdl->nobs) + j] = 0;
+        }
+    }
+
+    for (i = 0; i < mdl->npats; ++i) {
+        for (j = 0; j < mdl->nobs; ++j) {
+            f = concat(concat(qrk_id2str(mdl->reader->pats, i), "_"), qrk_id2str(mdl->reader->obs, j));
+            uint64_t id = qrk_str2id(mdl->reader->featList, f);
+            if (id != none)
+                mdl->featureMap[i *(mdl->nobs) + j] = id;
+        }
+    }
+    free(f);
+}
+
 void generateSentenceObs(mdl_t *mdl) {
     uint64_t obId;
     dat_t *dat = mdl->train;
@@ -319,6 +329,44 @@ void generateSentenceObs(mdl_t *mdl) {
         }
     }
 }
+
+void generateEmpiricalFeatureScore(mdl_t *mdl) {
+    uint64_t sId, patId, patIndex, obIndex, featId;
+    dat_t *dat = mdl->train;
+    int32_t S = mdl->reader->maxSegment;
+    uint32_t segStart, segEnd;
+    id_map_t *observationMapjd;
+    const uint32_t L = dat->nseq;
+    const uint64_t F = mdl->nftr;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
+    double (*emScore)[L][F] = (void *)mdl->empiricalScore;
+    for (uint32_t t = 0; t < L ; ++t) {
+        for (uint64_t i = 0; i < F; ++i) {
+            (*emScore)[t][i] = 0;
+        }
+    }
+    for (uint32_t n = 0; n < L; ++n) {
+        tok_t *tok = dat->tok[n];
+        uint32_t T= tok->len;
+        id_map_t (*obsMap)[T][S] = (void *) tok->observationMapjp;
+        segStart = 0;
+        while (segStart < T) {
+            segEnd = tok->sege[segStart];
+            observationMapjd = &((*obsMap)[segStart][segEnd-segStart]);
+            char *labelPat = generateLabelPattern(tok, segStart, segEnd);
+            sId = qrk_str2id(mdl->reader->backwardStateMap, labelPat);
+            for (patIndex = 0; patIndex < mdl->allSuffixes[sId].len; ++patIndex) {
+                for (obIndex = 0; obIndex < observationMapjd->len; ++obIndex) {
+                    patId = mdl->allSuffixes[sId].ids[patIndex];
+                    featId = (*featureMap)[patId][observationMapjd->ids[obIndex]];
+                    (*emScore)[n][featId] += featId != 0 ? 1 : 0;
+                }
+            }
+            segStart = segEnd + 1;
+        }
+    }
+}
+
 
 /* mdl_save:
  *   Save a model to be restored later in a platform independant way.

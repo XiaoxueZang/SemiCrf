@@ -51,10 +51,10 @@ void updateMaxMemory(tok_t *tok, rdr_t *reader) {
 
 void putIntoDatabase(char *newObs, char *labelPat, rdr_t *database) {
     // char *newObs = concat(head, tail);
-    uint64_t idObs = qrk_str2id(database->obs, newObs);
-    uint64_t idPats = qrk_str2id(database->pats, labelPat);
-    char *newFeats = concat(labelPat, newObs);
-    uint64_t idFeats = qrk_str2id(database->featList, newFeats);
+    qrk_str2id(database->obs, newObs);
+    qrk_str2id(database->pats, labelPat);
+    char *newFeats = concat(concat(labelPat, "_"), newObs);
+    qrk_str2id(database->featList, newFeats);
     free(newFeats);
     return;
 }
@@ -78,7 +78,7 @@ feature_dat_t* generateCrfFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t seg
                         "0CEIL.", "0CEILDIST.", "1FLOOR.", "1FLOORDIST.", "1CEIL.", "1CEILDIST.", "2FLOOR.",
                         "2FLOORDIST.", "2CEIL.", "2CEILDIST.", "3FLOOR.", "3FLOORDIST.", "3CEIL.", "3CEILDIST.",
                         "4FLOOR.", "4FLOORDIST.", "4CEIL.", "4CEILDIST."};
-    for (uint32_t i = 0; i <= 2; ++i) {
+    for (uint32_t i = 0; i <= 3; ++i) {
         allFeats->features[allFeats->len++] = constructFeature(concat(featHead[i], tok->toks[segStart][i]), labelPat);
     }
 

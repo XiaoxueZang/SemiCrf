@@ -284,7 +284,9 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
     tok->segl = xmalloc(sizeof(uint32_t) * T);
     tok->cur_t = xmalloc(sizeof(char *) * T);
     tok->maxOrder = 3;
+    tok->maxLabelLen = 0;
     tok->observationMapjp = NULL;
+    tok->empiricalScore = NULL;
     if (lbl == true)
         tok->lbl = xmalloc(sizeof(char *) * T);
     // We now take the raw sequence line by line and split them in list of
@@ -317,7 +319,8 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
         // to the label array.
         if (lbl == true) {
             tok->lbl[t] = toks[cnt - 1];
-            // put the label inside the labels;
+            tok->maxLabelLen = max(tok->maxLabelLen, strlen(toks[cnt-1]));
+            // put the label into label database;
             qrk_str2id(rdr->lbl, tok->lbl[t]);
             cnt--;
         }
@@ -436,6 +439,8 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
     updateMaxMemory(tok, rdr);
     uint32_t segStart = 0;
     uint32_t segEnd = 0;
+    // put an empty feature inside feature database. It is for the following gradient computatinon.
+    qrk_str2id(rdr->featList, "");
     while (segStart < tok->len) {
         segEnd = tok->sege[segStart];
         char *labelPat = generateLabelPattern(tok, segStart, segEnd);

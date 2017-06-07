@@ -123,7 +123,7 @@ void qrk_free(qrk_t *qrk) {
  */
 uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
 	const uint8_t *raw = (void *)key;
-	info("inside quark.c qrk_str2id %s\n", key);
+	// info("inside quark.c qrk_str2id %s\n", key);
 	const size_t   len = strlen(key);
 	// We first take care of the empty trie case so later we can safely
 	// assume that the trie is well formed and so there is no NULL pointers
@@ -203,6 +203,7 @@ uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
 	}
 	nx->child[side] = *trg;
 	*trg = nx;
+	info("%s, %u\n", key, lf->id);
 	return lf->id;
 }
 
@@ -214,8 +215,11 @@ uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
  *    make this pointer invalid.
  */
 const char *qrk_id2str(const qrk_t *qrk, uint64_t id) {
-	if (id >= qrk->count)
-		fatal("invalid identifier");
+	if (id >= qrk->count) {
+		// previous ver: fatal("invalid identifier")
+		info("invalid identifier");
+		return "none";
+	}
 	return qrk->leafs[id]->key;
 }
 

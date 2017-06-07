@@ -22,7 +22,7 @@ char *generateLabelPattern(tok_t *toks, uint32_t segStart, uint32_t segEnd) {
     uint32_t pos = segStart;
 
     for (uint32_t i = 0; i <= toks->maxOrder; ++i) {
-        uint32_t labelLen = strlen(toks->lbl[pos]); // sizeof(toks->lbl[pos]) / sizeof(toks->lbl[pos][0]);
+        size_t labelLen = strlen(toks->lbl[pos]); // sizeof(toks->lbl[pos]) / sizeof(toks->lbl[pos][0]);
         strcpy(labelPat + index, toks->lbl[pos]);
         *(labelPat + index + 1) = '|';
         index += labelLen + 1;
@@ -83,13 +83,12 @@ labelPat_t *generateLabelPatStruct(char *labelPat) {
 
 feature_dat_t *generateObs(tok_t *tok, rdr_t *reader, uint32_t segStart, uint32_t segEnd, char *labelPat) {
     uint32_t size = 5000;
-    uint32_t featsNum = 0;
     feature_dat_t *featurePack = xmalloc(sizeof(feature_dat_t));
     featurePack->len = 0;
     featurePack->features = xmalloc(sizeof(feature_t *) * size);
     labelPat_t *labelPatStruct = generateLabelPatStruct(labelPat);
     feature_dat_t *partFeat = xmalloc(sizeof(feature_dat_t) * size);
-    for (uint32_t i = 0; i <= labelPatStruct->order; ++i) {
+    for (int i = labelPatStruct->order; i >= 0; --i) {
         if (i == 0) partFeat = generateCrfFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
         if (i == 1) partFeat = generateFirstOrderFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
         if (i == 2) partFeat = generateSecondOrderFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
@@ -138,7 +137,7 @@ uint64_t getLongestIndexId(char *labelPat, qrk_t *qrk) {
         id = qrk_str2id(qrk, labelPatStruct->suffixes[i]);
         if (id != none) return id;
     }
-    fatal("No longest suffix index\n");
+    fatal("No longest suffix index.\n");
     return 0;
 }
 
@@ -149,6 +148,6 @@ char *getLongestSuffix(char* labelPat, qrk_t *qrk) {
         id = qrk_str2id(qrk, labelPatStruct->suffixes[i]);
         if (id != none) return labelPatStruct->suffixes[i];
     }
-    fatal("No longest suffix index\n");
+    fatal("No longest suffix.\n");
     return "";
 };

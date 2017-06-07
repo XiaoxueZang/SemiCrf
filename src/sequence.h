@@ -81,8 +81,9 @@ struct tok_s {
 	uint32_t *sege; // [T] end position
 	uint32_t *segl; // [t] segment length
 	char     **cur_t; // current token
-	uint32_t maxLabelLen;
+	size_t maxLabelLen;
 	id_map_t *observationMapjp;   // [S][maxSegment]
+	double *empiricalScore; // [F]
 	char     **toks[];  //  [T][]  Tokens lists
 };
 

@@ -61,7 +61,7 @@ static void uit_signal(int sig) {
  *   Install the signal handler for clean early stop from the user if possible
  *   and start the timer.
  */
-void uit_setup(mdl_t *mdl) {
+void  uit_setup(mdl_t *mdl) {
 	uit_stop = false;
 	if (signal(SIGINT, uit_signal) == SIG_ERR)
 		warning("failed to set signal handler, no clean early stop");
@@ -91,7 +91,7 @@ void uit_cleanup(mdl_t *mdl) {
  *   This function return true if the trainer have to keep training the model
  *   and false if he must stop, so this is were we will implement the trainer
  *   independant stoping criterion.
- */
+ */ /*
 bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 	// First we just compute the error rate on devel or train data
 	double te, se;
@@ -138,5 +138,6 @@ bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 		return false;
 	return res;
 }
+ */
 
 

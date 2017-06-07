@@ -62,14 +62,10 @@ struct mdl_s {
     int *lastPatternLabel;
     int *patternBackwardId;
 
-
-    // Informations about observations
-    // char     *kind;    //  [O]  observations type
-    uint64_t *uoff;    //  [O]  unigram weights offset
-    uint64_t *boff;    //  [O]  bigram weights offset
-
     // The model itself
     double *theta;   //  [F]  features weights
+    double *empiricalScore; // [N*F] empirical feature score
+    uint64_t *featureMap;
 
     // Datasets
     dat_t *train;   //       training dataset
@@ -84,6 +80,7 @@ struct mdl_s {
     // Timing
     tms_t timer;   //       start time of last iter
     double total;   //       total training time
+
 };
 
 mdl_t *mdl_new(rdr_t *rdr);
@@ -99,6 +96,10 @@ void buildBackwardTransition(mdl_t *mdl);
 void buildPatternTransition(mdl_t *mdl);
 
 void generateSentenceObs(mdl_t *mdl);
+
+void generateFeatureMap(mdl_t *mdl);
+
+void generateEmpiricalFeatureScore(mdl_t *mdl);
 
 // void mdl_compact(mdl_t *mdl);
 void mdl_save(mdl_t *mdl, FILE *file);
