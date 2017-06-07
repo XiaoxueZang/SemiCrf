@@ -66,7 +66,7 @@ struct mdl_s {
 
     // The model itself
     double *theta;   //  [F]  features weights
-    double *empiricalScore; // [N*F] empirical feature score
+    // double *empiricalScore; // [N*F] empirical feature score
     uint64_t *featureMap;
 
     // Datasets

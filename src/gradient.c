@@ -364,7 +364,7 @@ void grd_loss(grd_st_t *grd_st, const tok_t *tok) {
     const mdl_t *mdl = grd_st->mdl;
     const uint64_t F = mdl->nftr;
     for (uint64_t i = 0; i < F; ++i) {
-        grd_st->g[i] = grd_st->expec[i] - mdl->empiricalScore[i];
+        grd_st->g[i] = grd_st->expec[i] - tok->empiricalScore[i];
         grd_st->lloss -= mdl->theta[i] * tok->empiricalScore[i];
     }
     grd_st->lloss += grd_st->logZx;
@@ -572,6 +572,7 @@ double grd_gradient(grd_t *grd) {
     double fx = grd->grd_st[0]->lloss;
     for (uint32_t w = 1; w < W; w++)
         fx += grd->grd_st[w]->lloss;
+    info("loss is %f.\n", fx);
 #ifdef ATM_ANSI
     for (uint32_t w = 1; w < W; w++)
         for (uint64_t f = 0; f < F; f++)

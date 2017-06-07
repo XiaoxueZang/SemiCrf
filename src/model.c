@@ -25,7 +25,7 @@ mdl_t *mdl_new(rdr_t *rdr) {
     mdl->nlbl = mdl->nobs = mdl->nftr = mdl->npats = 0;
     mdl->featureMap = NULL;
     mdl->theta = NULL;
-    mdl->empiricalScore = NULL;
+    // mdl->empiricalScore = NULL;
     mdl->train = mdl->devel = NULL;
     mdl->reader = rdr;
     mdl->werr = NULL;
@@ -114,7 +114,6 @@ void mdl_sync(mdl_t *mdl) {
     mdl->lastPatternLabel = xmalloc(sizeof(int) * P);
     mdl->patternBackwardId = xmalloc(sizeof(int) * P);
     mdl->patternTransition = xmalloc(sizeof(transition_map_t) * P);
-    mdl->empiricalScore = xvm_new(mdl->train->nseq * F);
     mdl->theta = xvm_new(F);
 
     generateSentenceObs(mdl);
@@ -345,15 +344,16 @@ void generateEmpiricalFeatureScore(mdl_t *mdl) {
     const uint32_t L = dat->nseq;
     const uint64_t F = mdl->nftr;
     uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
-    double (*emScore)[L][F] = (void *)mdl->empiricalScore;
-    for (uint32_t t = 0; t < L ; ++t) {
-        for (uint64_t i = 0; i < F; ++i) {
-            (*emScore)[t][i] = 0;
-        }
-    }
+    // double (*emScore)[L][F] = (void *)mdl->empiricalScore;
+
     for (uint32_t n = 0; n < L; ++n) {
         tok_t *tok = dat->tok[n];
         uint32_t T= tok->len;
+        tok->empiricalScore = xvm_new(F);
+        double *emScore = tok->empiricalScore;
+        for (uint64_t i = 0; i < F; ++i) {
+            emScore[i] = 0;
+        }
         id_map_t (*obsMap)[T][S] = (void *) tok->observationMapjp;
         segStart = 0;
         while (segStart < T) {
@@ -365,7 +365,7 @@ void generateEmpiricalFeatureScore(mdl_t *mdl) {
                 for (obIndex = 0; obIndex < observationMapjd->len; ++obIndex) {
                     patId = mdl->allSuffixes[sId].ids[patIndex];
                     featId = (*featureMap)[patId][observationMapjd->ids[obIndex]];
-                    (*emScore)[n][featId] += featId != 0 ? 1 : 0;
+                    emScore[featId] += featId != 0 ? 1 : 0;
                 }
             }
             segStart = segEnd + 1;

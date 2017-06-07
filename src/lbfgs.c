@@ -232,6 +232,7 @@ void trn_lbfgs(mdl_t *mdl) {
 			// If we reach the maximum number of linesearsh steps
 			// without finding a good one, we just fail.
 			if (ls == mdl->opt->lbfgs.maxls) {
+				info("the maximum number of linearsearch step is %u.\n", mdl->opt->lbfgs.maxls);
 				warning("maximum linesearch reached");
 				err = true;
 				break;
