@@ -365,7 +365,7 @@ void grd_loss(grd_st_t *grd_st, const tok_t *tok) {
     const mdl_t *mdl = grd_st->mdl;
     const uint64_t F = mdl->nftr;
     for (uint64_t i = 0; i < F; ++i) {
-        grd_st->g[i] = grd_st->expec[i] - tok->empiricalScore[i];
+        grd_st->g[i] += grd_st->expec[i] - tok->empiricalScore[i];
         grd_st->lloss -= mdl->theta[i] * tok->empiricalScore[i];
     }
     grd_st->lloss += grd_st->logZx;
