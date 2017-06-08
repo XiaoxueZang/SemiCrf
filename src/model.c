@@ -41,6 +41,7 @@ mdl_t *mdl_new(rdr_t *rdr) {
  *   Free all memory used by a model object inculding the reader and datasets
  *   loaded in the model.
  */
+// ATTENTION: work needed.
 void mdl_free(mdl_t *mdl) {
     // free(mdl->kind);
     free(mdl->lastForwardStateLabel);

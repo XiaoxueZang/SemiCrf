@@ -589,7 +589,6 @@ double grd_gradient(grd_t *grd) {
     double sum = 0;
     for (uint64_t f = 0; f < F; f++)
         sum += g[f];
-    info("gradient is %f.\n", sum);
     // Now we can apply the elastic-net penalty. Depending of the values of
     // rho1 and rho2, this can in fact be a classical L1 or L2 penalty.
     const double rho1 = mdl->opt->rho1;
@@ -602,7 +601,7 @@ double grd_gradient(grd_t *grd) {
         nl2 += v * v;
     }
     fx += nl1 * rho1 + nl2 * rho2 / 2.0;
-    info("final loss is %f.\n", fx / mdl->train->nseq);
+    info("gradient sum is %f. loss is %f.\n", sum / mdl->train->nseq, fx / mdl->train->nseq);
     return fx;
 }
 
