@@ -25,7 +25,7 @@ char *generateLabelPattern(tok_t *toks, uint32_t segStart, uint32_t segEnd) {
         size_t labelLen = strlen(toks->lbl[pos]); // sizeof(toks->lbl[pos]) / sizeof(toks->lbl[pos][0]);
         strcpy(labelPat + index, toks->lbl[pos]);
         *(labelPat + index + 1) = '|';
-        index += labelLen + 1;
+        index += (uint32_t)labelLen + 1;
         if (pos == 0) {
             break;
         } else {
@@ -33,6 +33,8 @@ char *generateLabelPattern(tok_t *toks, uint32_t segStart, uint32_t segEnd) {
         }
     }
     *(labelPat + index - 1) = '\0';
+    // info("inside generateLabelPattern\n");
+    // info("pos is %u, %s, labelPat is %s\n", pos, toks->lbl[segStart], labelPat);
     return labelPat;
 }
 
@@ -67,6 +69,8 @@ labelPat_t *generateLabelPatStruct(char *labelPat) {
         char a = *(labelPat + i);
         if (a == '|' | a == '\0') {
             memcpy(labelPatStruct->suffixes[(labelPatStruct->order) - segNum], labelPat, i);
+            *(labelPatStruct->suffixes[(labelPatStruct->order) - segNum] + i) = '\0';
+            // info("%u suffix is %s.\n", labelPatStruct->order-segNum, labelPatStruct->suffixes[labelPatStruct->order-segNum]);
             --segNum;
         }
     }
@@ -148,6 +152,7 @@ char *getLongestSuffix(char* labelPat, qrk_t *qrk) {
         id = qrk_str2id(qrk, labelPatStruct->suffixes[i]);
         if (id != none) return labelPatStruct->suffixes[i];
     }
+    info("getLongestSuffix. pattern is %s.\n", labelPat);
     fatal("No longest suffix.\n");
     return "";
 };

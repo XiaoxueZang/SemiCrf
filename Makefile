@@ -8,8 +8,8 @@ INSTALL= install -p
 INSTALL_EXEC= $(INSTALL) -m 0755
 INSTALL_DATA= $(INSTALL) -m 0644
 
-SRC=src/*.c
-HDR=src/*.h
+SRC=$(filter-out src/wapiti.c, $(wildcard src/*.c))
+HDR=$(filter-out src/wapiti.h, $(wildcard src/*.h))
 
 wapiti: $(SRC) $(HDR)
 	@echo "CC: wapiti.c --> wapiti"

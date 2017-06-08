@@ -121,7 +121,9 @@ void mdl_sync(mdl_t *mdl) {
     buildForwardTransition(mdl);
     buildBackwardTransition(mdl);
     buildPatternTransition(mdl);
+    info("before emScore\n");
     generateEmpiricalFeatureScore(mdl);
+    info("finish mdl_sync\n");
     return;
 }
 
@@ -178,6 +180,7 @@ void mdl_sync(mdl_t *mdl) {
 */
 
 void buildForwardTransition(mdl_t *mdl) {
+    info("inside buildForwardTransition\n");
     rdr_t *reader = mdl->reader;
     uint32_t curLen;
     uint64_t size = reader->nforwardStateMap;
@@ -208,6 +211,7 @@ void buildForwardTransition(mdl_t *mdl) {
 }
 
 void buildBackwardTransition(mdl_t *mdl) {
+    info("inside buildBackwardTransition\n");
     int lastLabelId;
     qrk_t *lbQrk = mdl->reader->lbl;
     uint64_t patId;
@@ -228,6 +232,7 @@ void buildBackwardTransition(mdl_t *mdl) {
         }
         labelPat_t *suffixes = generateLabelPatStruct((char *) si);
         mdl->allSuffixes[siId].ids = xmalloc(sizeof(uint64_t) * suffixes->segNum);
+        mdl->allSuffixes[siId].len = 0;
         for (uint32_t i = 0; i < suffixes->segNum; ++i) {
             patId = qrk_str2id(mdl->reader->pats, suffixes->suffixes[i]);
             if (patId != none) {
@@ -239,6 +244,7 @@ void buildBackwardTransition(mdl_t *mdl) {
 }
 
 void buildPatternTransition(mdl_t *mdl) {
+    info("inside buildPatternTransition\n");
     qrk_t *patDat = mdl->reader->pats;
     qrk_t *backDat = mdl->reader->backwardStateMap;
     qrk_t *forDat = mdl->reader->forwardStateMap;
@@ -386,7 +392,7 @@ void mdl_save(mdl_t *mdl, FILE *file) {
     rdr_save(mdl->reader, file);
     for (uint64_t f = 0; f < mdl->nftr; f++)
         if (mdl->theta[f] != 0.0)
-            fprintf(file, "%"PRIu64"=%la\n", f, mdl->theta[f]);
+            fprintf(file, "%"PRIu64"=%f\n", f, mdl->theta[f]);
 }
 
 /* mdl_load:

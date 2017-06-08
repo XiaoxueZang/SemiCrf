@@ -19,13 +19,14 @@ char *concat(const char *s1, const char *s2) {
     //in real code you would check for errors in malloc here
     strcpy(result, s1);
     strcat(result, s2);
+    // info("concat s1 = %s, s2 = %s, res = %s.", s1, s2, result);
     return result;
 }
 
 void updateMaxMemory(tok_t *tok, rdr_t *reader) {
     uint32_t segStart = 0;
     uint64_t id;
-    if (reader->maxSegment == 0) {
+    if (reader->doSemi == true) {
         while (segStart < tok->len) {
             // segEnd = tok->sege[segStart];
             char *label = tok->lbl[segStart];
@@ -37,15 +38,13 @@ void updateMaxMemory(tok_t *tok, rdr_t *reader) {
             }
             segStart = tok->sege[segStart] + 1;
         }
-    } else if (reader->maxSegment == 1) {
+    } else {
         for (uint32_t i = 0; i < tok->len; ++i) {
-            tok->segs[i] = tok->sege[i] = 0;
+            tok->segs[i] = tok->sege[i] = i;
             tok->segl[i] = 1;
             id = qrk_str2id(reader->lbl, tok->lbl[i]);
             reader->maxMemory[id] = 1;
         }
-    } else {
-        fatal("Set maxSegment = -1 for semi-CRF and maxSegment = 1 for CRF.");
     }
 }
 
@@ -114,13 +113,13 @@ feature_dat_t* generateCrfFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t seg
     if (strcmp(tok->toks[segEnd][30], "-1"))
         allFeats->features[allFeats->len++] = constructFeature(concat(featHead[30], tok->toks[segEnd][30]), labelPat);
     if (strcmp(tok->toks[segStart][31], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[23], tok->toks[segStart][23]), labelPat);
+        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[31], tok->toks[segStart][31]), labelPat);
     if (strcmp(tok->toks[segStart][32], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[24], tok->toks[segStart][24]), labelPat);
+        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[32], tok->toks[segStart][32]), labelPat);
     if (strcmp(tok->toks[segEnd][33], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[25], tok->toks[segEnd][25]), labelPat);
+        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[33], tok->toks[segEnd][33]), labelPat);
     if (strcmp(tok->toks[segEnd][34], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[26], tok->toks[segEnd][26]), labelPat);
+        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[34], tok->toks[segEnd][34]), labelPat);
 
     if (strcmp(tok->toks[segStart][35], "-1"))
         allFeats->features[allFeats->len++] = constructFeature(concat(featHead[35], tok->toks[segStart][35]), labelPat);

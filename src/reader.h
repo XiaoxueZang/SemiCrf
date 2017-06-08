@@ -22,6 +22,7 @@
 
 typedef struct rdr_s rdr_t;
 struct rdr_s {
+    bool doSemi;
     int32_t maxSegment;
     uint64_t nlbl;     // Y Total number of labels
     uint64_t npats;      //  P   Total number of patterns
@@ -40,7 +41,7 @@ struct rdr_s {
     int32_t *maxMemory;  //      maxMemory: maximum length of continuous labels. the index is the id of (qrk_t *)lbl.
 };
 
-rdr_t *rdr_new(uint32_t maxSegment);
+rdr_t *rdr_new(bool doSemi);
 
 void updateReader(tok_t *tok, rdr_t *rdr);
 

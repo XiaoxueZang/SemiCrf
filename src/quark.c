@@ -1,29 +1,3 @@
-/*
- *      Wapiti - A linear-chain CRF tool
- *
- * Copyright (c) 2009-2013  CNRS
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -79,7 +53,7 @@ struct qrk_s {
  *   not needed anymore.
  */
 qrk_t *qrk_new(void) {
-	const uint64_t size = 256;
+	const uint64_t size = 128;
 	qrk_t *qrk = xmalloc(sizeof(qrk_t));
 	qrk->root  = NULL;
 	qrk->count = 0;
@@ -123,7 +97,6 @@ void qrk_free(qrk_t *qrk) {
  */
 uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
 	const uint8_t *raw = (void *)key;
-	// info("inside quark.c qrk_str2id %s\n", key);
 	const size_t   len = strlen(key);
 	// We first take care of the empty trie case so later we can safely
 	// assume that the trie is well formed and so there is no NULL pointers
@@ -203,7 +176,7 @@ uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
 	}
 	nx->child[side] = *trg;
 	*trg = nx;
-	info("%s, %u\n", key, lf->id);
+	// info("%s, %u\n", key, lf->id);
 	return lf->id;
 }
 
@@ -217,8 +190,9 @@ uint64_t qrk_str2id(qrk_t *qrk, const char *key) {
 const char *qrk_id2str(const qrk_t *qrk, uint64_t id) {
 	if (id >= qrk->count) {
 		// previous ver: fatal("invalid identifier")
-		info("invalid identifier");
-		return "none";
+		info("id is %u\n", id);
+		fatal("invalid identifier");
+		// return "none";
 	}
 	return qrk->leafs[id]->key;
 }

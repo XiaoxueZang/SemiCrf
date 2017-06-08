@@ -92,14 +92,14 @@ const opt_t opt_defaults = {
 	.mode    = -1,
 	.input   = NULL,     .output  = NULL,
 	.type    = "crf",
-	.maxSegment = 0,
+	.doSemi = true,
 	.algo    = "l-bfgs", .pattern = NULL,  .model   = NULL, .devel   = NULL,
 	.rstate  = NULL,     .sstate  = NULL,
 	.compact = false,    .sparse  = false,
 	.nthread = 1,        .jobsize = 64,    .maxiter = 0,
-	.rho1    = 0.5,      .rho2    = 0.0001,
-	.objwin  = 5,        .stopwin = 5,     .stopeps = 0.02,
-	.lbfgs = {.clip   = false, .histsz = 5, .maxls = 40},
+	.rho1    = 0,      .rho2    = 0.0001,
+	.objwin  = 5,        .stopwin = 5,     .stopeps = 0.001,
+	.lbfgs = {.clip   = false, .histsz = 5, .maxls = 100},
 	.sgdl1 = {.eta0   = 0.8,   .alpha  = 0.85},
 	.bcd   = {.kappa  = 1.5},
 	.rprop = {.stpmin = 1e-8, .stpmax = 50.0, .stpinc = 1.2, .stpdec = 0.5,
@@ -121,7 +121,7 @@ struct {
 	size_t  offset;
 } opt_switch[] = {
 	{0, "-T", "--type",    'S', offsetof(opt_t, type        )},
-	{0, "##", "--ms",      'U', offsetof(opt_t, maxSegment  )},
+	{0, "##", "--semi",    'B', offsetof(opt_t, doSemi      )},
 	{0, "-a", "--algo",    'S', offsetof(opt_t, algo        )},
 	{0, "-p", "--pattern", 'S', offsetof(opt_t, pattern     )},
 	{0, "-m", "--model",   'S', offsetof(opt_t, model       )},
@@ -248,6 +248,13 @@ void opt_parse(int argc, char *argv[argc], opt_t *opt) {
 				if (sscanf(argv[1], "%lf", &tmp) != 1)
 					fatal(err_badval, arg);
 				*((double *)ptr) = tmp;
+				argc -= 2, argv += 2;
+				break; }
+			case 'I': {
+				int tmp;
+				if (sscanf(argv[1], "%d", &tmp) != 1)
+					fatal(err_badval, arg);
+				*((int *)ptr) = tmp;
 				argc -= 2, argv += 2;
 				break; }
 			case 'B':

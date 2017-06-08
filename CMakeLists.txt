@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(SemiCrf)
+project(SemiC)
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
@@ -25,6 +25,8 @@ set(SOURCE_FILES
         src/options.h
         src/pattern.c
         src/pattern.h
+        src/progress.c
+        src/progress.h
         src/quark.c
         src/quark.h
         src/reader.c
@@ -32,17 +34,21 @@ set(SOURCE_FILES
         # src/rprop.c
         src/sequence.h
         # src/sgdl1.c
+        src/thread.c
+        src/thread.h
         src/tools.c
         src/tools.h
         src/vmath.c
         src/vmath.h
-        # src/lbfgs.c
-        # src/gradient.h
-        # src/gradient.c
+        src/lbfgs.c
+        src/gradient.h
+        src/gradient.c
+        #src/decoder.c
+        #src/decoder.h
         src/featuresUnitTest.c
         COPYING
         HISTORY
         INSTALL
         Makefile)
 
-add_executable(SemiCrf ${SOURCE_FILES})
+add_executable(SemiC ${SOURCE_FILES})

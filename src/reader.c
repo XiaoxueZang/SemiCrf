@@ -42,9 +42,13 @@
  *   list of features. They must either start with a prefix 'u', 'b', or '*', or
  *   you must set autouni to true in order to automatically add a 'u' prefix.*
 */
-rdr_t *rdr_new(uint32_t maxSegment) {
+rdr_t *rdr_new(bool doSemi) {
     rdr_t *rdr = xmalloc(sizeof(rdr_t));
-    rdr->maxSegment = maxSegment;
+    rdr->doSemi = doSemi;
+    if (doSemi == true)
+        rdr->maxSegment = 1;
+    else
+        rdr->maxSegment = -1;
     rdr->npats = rdr->nfeats = rdr->npats = 0;
     rdr->nlbl = rdr->nforwardStateMap = rdr->nbackwardStateMap = 0;
     rdr->lbl = qrk_new();
@@ -54,6 +58,9 @@ rdr_t *rdr_new(uint32_t maxSegment) {
     rdr->backwardStateMap = qrk_new();
     rdr->forwardStateMap = qrk_new();
     rdr->maxMemory = xmalloc(sizeof(uint32_t) * MAX_LABEL_COUNT);
+    for (int i = 0; i < MAX_LABEL_COUNT; ++i) {
+        rdr->maxMemory[i] = 0;
+    }
     return rdr;
 }
 
@@ -211,65 +218,14 @@ static uint64_t rdr_mapobs(rdr_t *rdr, const char *str) {
 }
 */
 
-/* rdr_rawtok2seq:
- *   Convert a tok_t to a seq_t object taking each tokens as a feature without
- *   applying patterns.
-
-static seq_t *rdr_rawtok2seq(rdr_t *rdr, const tok_t *tok) {
-	const uint32_t T = tok->len;
-	uint32_t size = rdr->obs[]; // the size of unifeatures for one line (one token);
-
-	seq_t *seq = xmalloc(sizeof(seq_t) + sizeof(pos_t) * T);
-	seq->raw = xmalloc(sizeof(uint64_t) * size);
-	seq->len = T;
-	uint64_t *raw = seq->raw;
-	for (uint32_t t = 0; t < T; t++) {
-		seq->pos[t].lbl = (uint32_t)-1;
-		seq->pos[t].ucnt = 0;
-		seq->pos[t].uobs = raw;
-		for (uint32_t n = 0; n < tok->cnts[t]; n++) {
-			if (!rdr->autouni && tok->toks[t][n][0] == 'b')
-				continue;
-			uint64_t id = rdr_mapobs(rdr, tok->toks[t][n]);
-			if (id != none) {
-				(*raw++) = id;
-				seq->pos[t].ucnt++;
-			}
-		}
-		seq->pos[t].bcnt = 0;
-		if (rdr->autouni)
-			continue;
-		seq->pos[t].bobs = raw;
-		for (uint32_t n = 0; n < tok->cnts[t]; n++) {
-			if (tok->toks[t][n][0] == 'u')
-				continue;
-			uint64_t id = rdr_mapobs(rdr, tok->toks[t][n]);
-			if (id != none) {
-				(*raw++) = id;
-				seq->pos[t].bcnt++;
-			}
-		}
-	}
-	// And finally, if the user specified it, populate the labels
-	if (tok->lbl != NULL) {
-		for (uint32_t t = 0; t < T; t++) {
-			const char *lbl = tok->lbl[t];
-			uint64_t id = qrk_str2id(rdr->lbl, lbl);
-			seq->pos[t].lbl = id;
-		}
-	}
-	return seq;
-}
-
-*/
 /* rdr_raw2seq:
- *   Convert a raw sequence to a seq_t object suitable for training or
+ *   Convert a raw sequence to a tok_t object suitable for training or
  *   labelling. If lbl is true, the last column is assumed to be a label and
  *   interned also.
  */
 // sequence ex:
-// angry 14 1
-// is 13 0
+// angle 14 1
+// is    13 0
 // ...
 // (one sequence of the input file)
 tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
@@ -444,6 +400,7 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
     while (segStart < tok->len) {
         segEnd = tok->sege[segStart];
         char *labelPat = generateLabelPattern(tok, segStart, segEnd);
+
         feature_dat_t *features = generateObs(tok, rdr, segStart, segEnd, labelPat);
         for (uint32_t id = 0; id < features->len; ++id) {
             putIntoDatabase(features->features[id]->obs, features->features[id]->pats, rdr);

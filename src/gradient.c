@@ -195,7 +195,7 @@ void grd_fwd(grd_st_t *grd_st, const tok_t *tok) {
     // const double (*psi)[F] = (void *) grd_st->psi;
     double (*alpha)[T + 1][A] = (void *) grd_st->alpha;
     // double (*beta )[T + 1][B] = (void *) grd_st->beta;
-    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
 
     uint32_t i, j;
     uint64_t featId;
@@ -247,7 +247,7 @@ void grd_bwd(grd_st_t *grd_st, const tok_t *tok) {
     // double *unorm = grd_st->unorm;
     // double *bnorm = grd_st->bnorm;
     id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
-    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
     int i, j, y, skId, minseq, d;
     double featureScore;
     uint64_t patId, featId;
@@ -290,7 +290,7 @@ void grd_logZx(grd_st_t *grd_st, const tok_t *tok) {
     const mdl_t *mdl = grd_st->mdl;
     const uint64_t A = mdl->nfws;
     const uint32_t T = tok->len;
-    const double (*alpha)[T+1][A] = (void *)grd_st->alpha;
+    const double (*alpha)[T + 1][A] = (void *) grd_st->alpha;
     double logZx = -INFINITY;
     for (uint32_t i = 0; i < A; ++i) {
         logZx = logSumExp(logZx, (*alpha)[T][i]);
@@ -311,7 +311,7 @@ void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
     double (*beta)[T + 1][B] = (void *) grd_st->beta;
     double *expec = grd_st->expec;
     double (*alpha)[T + 1][A] = (void *) grd_st->alpha;
-    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *)mdl->featureMap;
+    uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
     id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
     id_map_t *observationMapjd;
     uint32_t obId;
@@ -319,7 +319,7 @@ void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
     int i, j, y, d, maxmem, maxLen, patIndex;
     double featureScore;
     uint64_t piId, piyId, zId, patId, featId;
-    double (*marginal)[P][T][S] = (void *)grd_st->marginal;
+    double (*marginal)[P][T][S] = (void *) grd_st->marginal;
     (*marginal)[0][0][0] = 1;
     for (i = 0; i < F; ++i) {
         expec[i] = 0;
@@ -328,7 +328,7 @@ void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
         y = mdl->lastPatternLabel[zId];
         maxmem = y == -1 ? 0 : mdl->reader->maxMemory[y];
         for (i = 0; i < T; ++i) {
-            maxLen = min(maxmem, (int)T-i);
+            maxLen = min(maxmem, (int) T - i);
             for (d = 0; d < S; ++d) {
                 (*marginal)[zId][i][d] = 0;
             }
@@ -346,12 +346,13 @@ void grd_marginal_exp(grd_st_t *grd_st, const tok_t *tok) {
                             featureScore += (featId != 0) ? mdl->theta[featId] : 0;
                         }
                     }
-                    (*marginal)[zId][i][d] = logSumExp((*marginal)[zId][i][d], (*alpha)[i][piId] + (*beta)[i + d + 1][piyId] + featureScore);
+                    (*marginal)[zId][i][d] = logSumExp((*marginal)[zId][i][d],
+                                                       (*alpha)[i][piId] + (*beta)[i + d + 1][piyId] + featureScore);
                 }
                 (*marginal)[zId][i][d] = exp((*marginal)[zId][i][d] - grd_st->logZx);
                 for (obId = 0; obId < observationMapjd->len; ++obId) {
                     featId = (*featureMap)[zId][observationMapjd->ids[obId]];
-                    expec[featId] +=  featId != 0 ? (*marginal)[zId][i][d] : 0;
+                    expec[featId] += featId != 0 ? (*marginal)[zId][i][d] : 0;
                 }
             }
         }
@@ -437,8 +438,8 @@ void grd_stcheck(grd_st_t *grd_st, uint32_t len) {
     const int32_t S = grd_st->mdl->reader->maxSegment;
     const uint64_t P = grd_st->mdl->npats;
     grd_st->marginal = xvm_new(P * T * S);
-    grd_st->alpha = xvm_new((T+1) * A);
-    grd_st->beta = xvm_new((T+1) * B);
+    grd_st->alpha = xvm_new((T + 1) * A);
+    grd_st->beta = xvm_new((T + 1) * B);
     grd_st->expec = xvm_new(F);
     grd_st->len = len;
 }
@@ -572,7 +573,8 @@ double grd_gradient(grd_t *grd) {
     double fx = grd->grd_st[0]->lloss;
     for (uint32_t w = 1; w < W; w++)
         fx += grd->grd_st[w]->lloss;
-    info("loss is %f.\n", fx);
+    //info("g is %f.\n", grd->grd_st);
+    // info("loss is %f.\n", fx / mdl->train->nseq);
 #ifdef ATM_ANSI
     for (uint32_t w = 1; w < W; w++)
         for (uint64_t f = 0; f < F; f++)
@@ -584,6 +586,10 @@ double grd_gradient(grd_t *grd) {
         for (uint64_t f = 0; f < F; f++)
             if (x[f] == 0.0)
                 g[f] = 0.0;
+    double sum = 0;
+    for (uint64_t f = 0; f < F; f++)
+        sum += g[f];
+    info("gradient is %f.\n", sum);
     // Now we can apply the elastic-net penalty. Depending of the values of
     // rho1 and rho2, this can in fact be a classical L1 or L2 penalty.
     const double rho1 = mdl->opt->rho1;
@@ -596,6 +602,7 @@ double grd_gradient(grd_t *grd) {
         nl2 += v * v;
     }
     fx += nl1 * rho1 + nl2 * rho2 / 2.0;
+    info("final loss is %f.\n", fx / mdl->train->nseq);
     return fx;
 }
 
