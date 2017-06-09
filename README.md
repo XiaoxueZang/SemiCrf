@@ -12,4 +12,4 @@ $ ./wapiti train dat/train_semi.txt dat/model_semi   (test with data of large si
 -t (num): determine the number of threads (default 1).
 
 Example:
-./wapiti -1 0 -t 2 train dat/train_semi.txt dat/model_semi (test with data of large size and run in 2 threads).
+./wapiti train -1 0 -t 2 dat/train_semi.txt dat/model_semi (test with data of large size and run in 2 threads).
