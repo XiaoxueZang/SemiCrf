@@ -13,6 +13,7 @@
 #include "sequence.h"
 #include "tools.h"
 #include "features.h"
+#include "vmath.h"
 
 #define MAX_LABEL_COUNT 10
 
@@ -69,9 +70,10 @@ rdr_t *rdr_new(bool doSemi) {
  *   any string returned by them must not be used after this call.
  */
 void rdr_free(rdr_t *rdr) {
-    for (uint32_t i = 0; i < rdr->npats; i++)
-        // pat_free(rdr->pats[i]);
-        free(rdr->pats);
+    free(rdr->maxMemory);
+    qrk_free(rdr->pats);
+    qrk_free(rdr->backwardStateMap);
+    qrk_free(rdr->forwardStateMap);
     qrk_free(rdr->lbl);
     qrk_free(rdr->obs);
     free(rdr);
@@ -86,20 +88,44 @@ void rdr_freeraw(raw_t *raw) {
     free(raw);
 }
 
+void idmap_free(id_map_t *id) {
+    free(id->ids);
+    free(id);
+}
+
 /* rdr_freeseq:
  *   Free all memory used by a seq_t object.
  */
-void rdr_freeseq(seq_t *seq) {
-    free(seq->raw);
-    free(seq);
+void rdr_freetok(tok_t *tok, bool lbl) {
+    // free(tok->cur_t[0]);
+    free(tok->cur_t);
+    // free(tok->lbl[0]);
+    for (uint32_t t = 0; t < tok->len; t++) {
+        if (tok->cnts[t] == 0)
+            continue;
+        free(tok->toks[t][0]);
+        free(tok->toks[t]);
+    }
+    free(tok->cnts);
+    if (lbl == true) {
+        // free(tok->lbl[0]);
+        free(tok->lbl);
+    }
+    free(tok->sege);
+    free(tok->segs);
+    free(tok->segl);
+    idmap_free(tok->observationMapjp);
+    xvm_free(tok->empiricalScore);
+    free(tok);
 }
+
 
 /* rdr_freedat:
  *   Free all memory used by a dat_t object.
  */
 void rdr_freedat(dat_t *dat) {
     for (uint32_t i = 0; i < dat->nseq; i++)
-        // rdr_freeseq(dat->tok[i]);
+        rdr_freetok(dat->tok[i], dat->lbl);
         free(dat->tok);
     free(dat);
 }

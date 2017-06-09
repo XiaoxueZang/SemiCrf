@@ -43,11 +43,13 @@ mdl_t *mdl_new(rdr_t *rdr) {
  */
 // ATTENTION: work needed.
 void mdl_free(mdl_t *mdl) {
-    // free(mdl->kind);
     free(mdl->lastForwardStateLabel);
     free(mdl->backwardTransition);
     free(mdl->lastPatternLabel);
     free(mdl->patternBackwardId);
+    free(mdl->featureMap);
+    transition_free(mdl->patternTransition);
+    transition_free(mdl->forwardTransition);
     if (mdl->theta != NULL)
         xvm_free(mdl->theta);
     if (mdl->train != NULL)
@@ -423,4 +425,10 @@ void mdl_load(mdl_t *mdl, FILE *file) {
             fatal(err);
         mdl->theta[f] = v;
     }
+}
+
+void transition_free(transition_map_t *a) {
+    free(a->idsOne);
+    free(a->idsTwo);
+    free(a);
 }

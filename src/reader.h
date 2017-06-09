@@ -57,6 +57,10 @@ void rdr_freeseq(seq_t *seq);
 
 void rdr_freedat(dat_t *dat);
 
+void idmap_free(id_map_t *id);
+
+void rdr_freetok(tok_t *tok, bool lbl);
+
 // void rdr_loadpat(rdr_t *rdr, FILE *file);
 
 raw_t *rdr_readraw(rdr_t *rdr, FILE *file);

@@ -419,12 +419,8 @@ void grd_stcheck(grd_st_t *grd_st, uint32_t len) {
         grd_st->alpha = NULL;
         xvm_free(grd_st->beta);
         grd_st->beta = NULL;
-        xvm_free(grd_st->unorm);
-        grd_st->unorm = NULL;
-        xvm_free(grd_st->bnorm);
-        grd_st->bnorm = NULL;
-        xvm_free(grd_st->scale);
-        grd_st->scale = NULL;
+        xvm_free(grd_st->expec);
+        grd_st->expec = NULL;
         grd_st->len = 0;
     }
     if (len == 0 || len <= grd_st->len)
@@ -456,9 +452,6 @@ grd_st_t *grd_stnew(mdl_t *mdl, double *g) {
     grd_st->marginal = NULL;
     grd_st->alpha = NULL;
     grd_st->beta = NULL;
-    grd_st->unorm = NULL;
-    grd_st->bnorm = NULL;
-    grd_st->scale = NULL;
     return grd_st;
 }
 

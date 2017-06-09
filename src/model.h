@@ -13,7 +13,7 @@
 typedef struct timeval tms_t;
 typedef struct rdr_s rdr_t;
 typedef struct qrk_s qrk_t;
-typedef struct id_map_s id_map_t;
+// typedef struct id_map_s id_map_t;
 
 
 typedef struct transition_map_s transition_map_t;
@@ -63,11 +63,10 @@ struct mdl_s {
     id_map_t *allSuffixes;
     int *lastPatternLabel;
     int *patternBackwardId;
+    uint64_t *featureMap;
 
     // The model itself
     double *theta;   //  [F]  features weights
-    // double *empiricalScore; // [N*F] empirical feature score
-    uint64_t *featureMap;
 
     // Datasets
     dat_t *train;   //       training dataset
@@ -76,8 +75,8 @@ struct mdl_s {
 
     // Stoping criterion
     double *werr;    //       Window of error rate of last iters
-    uint32_t wcnt;    //       Number of iters in the window
-    uint32_t wpos;    //       Position for the next iter
+    // uint32_t wcnt;    //       Number of iters in the window
+    // uint32_t wpos;    //       Position for the next iter
 
     // Timing
     tms_t timer;   //       start time of last iter
@@ -107,5 +106,7 @@ void generateEmpiricalFeatureScore(mdl_t *mdl);
 void mdl_save(mdl_t *mdl, FILE *file);
 
 void mdl_load(mdl_t *mdl, FILE *file);
+
+void transition_free(transition_map_t *a);
 
 #endif

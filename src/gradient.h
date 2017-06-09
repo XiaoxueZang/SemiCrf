@@ -32,9 +32,9 @@ struct grd_st_s {
     double *beta;    // [T][Y]    backward scores
     double *marginal; // [P][T][S]
     double *expec;   // [F]
-    double *scale;   // [T]       scaling factors of forward scores
-    double *unorm;   // [T]       normalization factors for unigrams
-    double *bnorm;   // [T]       normalization factors for bigrams
+    // double *scale;   // [T]       scaling factors of forward scores
+    // double *unorm;   // [T]       normalization factors for unigrams
+    // double *bnorm;   // [T]       normalization factors for bigrams
     uint32_t first;   //           first position where gradient is needed
     uint32_t last;    //           last position where gradient is needed
 };

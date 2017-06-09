@@ -68,7 +68,7 @@ void  uit_setup(mdl_t *mdl) {
 	gettimeofday(&mdl->timer, NULL);
 	if (mdl->opt->stopwin != 0)
 		mdl->werr = xmalloc(sizeof(double) * mdl->opt->stopwin);
-	mdl->wcnt = mdl->wpos = 0;
+	// mdl->wcnt = mdl->wpos = 0;
 }
 
 /* uit_cleanup:
