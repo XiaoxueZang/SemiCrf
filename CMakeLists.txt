@@ -43,12 +43,9 @@ set(SOURCE_FILES
         src/lbfgs.c
         src/gradient.h
         src/gradient.c
-        #src/decoder.c
-        #src/decoder.h
+        src/decoder.c
+        src/decoder.h
         src/featuresUnitTest.c
-        COPYING
-        HISTORY
-        INSTALL
-        Makefile)
+        )
 
 add_executable(SemiC ${SOURCE_FILES})

@@ -30,7 +30,7 @@ static void dotrain(mdl_t *mdl) {
         if (file == NULL)
             pfatal("cannot open input data file");
     }
-    mdl->train = rdr_readdat(mdl->reader, file, true);
+    mdl->train = rdr_readdat(mdl->reader, file, true, true);
     if (mdl->opt->input != NULL)
         fclose(file);
 
@@ -41,7 +41,7 @@ static void dotrain(mdl_t *mdl) {
         info("* Initialize the model\n");
     else
         info("* Resync the model\n");
-    mdl_sync(mdl);
+    mdl_sync(mdl, true);
     // Display some statistics as we all love this.
     info("* Summary\n");
     info("    nb train:    %"PRIu32"\n", mdl->train->nseq);
@@ -111,7 +111,15 @@ int main(int argc, char *argv[argc]) {
     // Next we prepare the model
     mdl_t *mdl = mdl_new(rdr_new(opt.doSemi));
     mdl->opt = &opt;
-    dotrain(mdl);
+    switch (opt.mode) {
+        case 0:
+            dotrain(mdl);
+            break;
+        case 1:
+            dolabel(mdl);
+            break;
+    }
+    // dotrain(mdl);
     mdl_free(mdl);
     return EXIT_SUCCESS;
 }

@@ -88,7 +88,7 @@ mdl_t *mdl_new(rdr_t *rdr);
 
 void mdl_free(mdl_t *mdl);
 
-void mdl_sync(mdl_t *mdl);
+void mdl_sync(mdl_t *mdl, bool doTrain);
 
 void buildForwardTransition(mdl_t *mdl);
 

@@ -85,7 +85,7 @@ void mdl_free(mdl_t *mdl) {
  *   prevent new one to be created. You must unlock them explicitly if needed.
  *   This reduce the risk of mistakes.
  */
-void mdl_sync(mdl_t *mdl) {
+void mdl_sync(mdl_t *mdl, bool doTrain) {
     const uint64_t Y = qrk_count(mdl->reader->lbl);
     const uint64_t O = qrk_count(mdl->reader->obs);
     const uint64_t F = qrk_count(mdl->reader->featList);
@@ -119,13 +119,20 @@ void mdl_sync(mdl_t *mdl) {
     mdl->patternTransition = xmalloc(sizeof(transition_map_t) * P);
     mdl->theta = xvm_new(F);
 
-    generateSentenceObs(mdl);
-    generateFeatureMap(mdl);
-    buildForwardTransition(mdl);
-    buildBackwardTransition(mdl);
-    buildPatternTransition(mdl);
-    info("before emScore\n");
-    generateEmpiricalFeatureScore(mdl);
+    if (doTrain) {
+        generateSentenceObs(mdl);
+        generateFeatureMap(mdl);
+        buildForwardTransition(mdl);
+        buildBackwardTransition(mdl);
+        buildPatternTransition(mdl);
+        generateEmpiricalFeatureScore(mdl);
+    }
+    else {
+        generateFeatureMap(mdl);
+        buildForwardTransition(mdl);
+        buildBackwardTransition(mdl);
+        buildPatternTransition(mdl);
+    }
     info("finish mdl_sync\n");
     return;
 }
@@ -186,7 +193,7 @@ void buildForwardTransition(mdl_t *mdl) {
     info("inside buildForwardTransition\n");
     rdr_t *reader = mdl->reader;
     uint32_t curLen;
-    uint64_t size = reader->nforwardStateMap;
+    uint64_t size = mdl->nfws;
     uint64_t index, backIndex;
     transition_map_t (*forwardTransition)[size] = (void *) mdl->forwardTransition;
     int *lastForwardStateLabel = mdl->lastForwardStateLabel;
@@ -417,7 +424,7 @@ void mdl_load(mdl_t *mdl, FILE *file) {
             fatal(err);
     }
     rdr_load(mdl->reader, file);
-    mdl_sync(mdl);
+    mdl_sync(mdl, false);
     for (uint64_t i = 0; i < nact; i++) {
         uint64_t f;
         double v;

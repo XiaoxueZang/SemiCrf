@@ -72,7 +72,7 @@ void  uit_setup(mdl_t *mdl) {
 }
 
 /* uit_cleanup:
- *   Remove the signal handler restoring the defaul behavior in case of
+ *   Remove the signal handler restoring the default behavior in case of
  *   interrupt.
  */
 void uit_cleanup(mdl_t *mdl) {

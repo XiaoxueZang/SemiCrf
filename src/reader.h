@@ -26,18 +26,13 @@ struct rdr_s {
     int32_t maxSegment;
     uint64_t nlbl;     // Y Total number of labels
     uint64_t npats;      //  P   Total number of patterns
-    uint64_t nfeats;  //      Number of unigram and bigram patterns
-    // uint64_t ntoks;      //      Expected number of tokens in input
     uint64_t nforwardStateMap;
-    uint64_t nbackwardStateMap;
-    // pat_t    **pats;       // [P]  List of precompiled patterns
     qrk_t *lbl;        //      Labels database
     qrk_t *obs;        //      Observation database
     qrk_t *pats;       //      patterns database
     qrk_t *featList;   //      featureList
     qrk_t *forwardStateMap;
     qrk_t *backwardStateMap;
-    // uint64_t **featMap;     //      featureMap
     int32_t *maxMemory;  //      maxMemory: maximum length of continuous labels. the index is the id of (qrk_t *)lbl.
 };
 
@@ -65,11 +60,11 @@ void rdr_freetok(tok_t *tok, bool lbl);
 
 raw_t *rdr_readraw(rdr_t *rdr, FILE *file);
 
-tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl);
+tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain);
 
-tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl);
+tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl, bool doTrain);
 
-dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl);
+dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl, bool doTrain);
 
 void rdr_load(rdr_t *rdr, FILE *file);
 

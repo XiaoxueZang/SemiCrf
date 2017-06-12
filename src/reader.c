@@ -50,15 +50,15 @@ rdr_t *rdr_new(bool doSemi) {
         rdr->maxSegment = 1;
     else
         rdr->maxSegment = -1;
-    rdr->npats = rdr->nfeats = rdr->npats = 0;
-    rdr->nlbl = rdr->nforwardStateMap = rdr->nbackwardStateMap = 0;
+    rdr->npats = rdr->npats = 0;
+    rdr->nlbl = rdr->nforwardStateMap = 0;
     rdr->lbl = qrk_new();
     rdr->obs = qrk_new();
     rdr->pats = qrk_new();
     rdr->featList = qrk_new();
     rdr->backwardStateMap = qrk_new();
     rdr->forwardStateMap = qrk_new();
-    rdr->maxMemory = xmalloc(sizeof(uint32_t) * MAX_LABEL_COUNT);
+    rdr->maxMemory = xmalloc(sizeof(int32_t) * MAX_LABEL_COUNT);
     for (int i = 0; i < MAX_LABEL_COUNT; ++i) {
         rdr->maxMemory[i] = 0;
     }
@@ -111,11 +111,13 @@ void rdr_freetok(tok_t *tok, bool lbl) {
         // free(tok->lbl[0]);
         free(tok->lbl);
     }
-    free(tok->sege);
-    free(tok->segs);
-    free(tok->segl);
-    idmap_free(tok->observationMapjp);
-    xvm_free(tok->empiricalScore);
+    if (tok->sege != NULL) {
+        free(tok->sege);
+        free(tok->segs);
+        free(tok->segl);
+        idmap_free(tok->observationMapjp);
+        xvm_free(tok->empiricalScore);
+    }
     free(tok);
 }
 
@@ -126,7 +128,7 @@ void rdr_freetok(tok_t *tok, bool lbl) {
 void rdr_freedat(dat_t *dat) {
     for (uint32_t i = 0; i < dat->nseq; i++)
         rdr_freetok(dat->tok[i], dat->lbl);
-        free(dat->tok);
+    free(dat->tok);
     free(dat);
 }
 
@@ -230,20 +232,6 @@ raw_t *rdr_readraw(rdr_t *rdr, FILE *file) {
     return raw;
 }
 
-/* rdr_mapobs:
- *   Map an observation to its identifier, automatically adding a 'u' prefix in
- *   'autouni' mode.
-
-static uint64_t rdr_mapobs(rdr_t *rdr, const char *str) {
-	if (!rdr->autouni)
-		return qrk_str2id(rdr->obs, str);
-	char tmp[strlen(str) + 2];
-	tmp[0] = 'u';
-	strcpy(tmp + 1, str);
-	return qrk_str2id(rdr->obs, tmp);
-}
-*/
-
 /* rdr_raw2seq:
  *   Convert a raw sequence to a tok_t object suitable for training or
  *   labelling. If lbl is true, the last column is assumed to be a label and
@@ -254,16 +242,21 @@ static uint64_t rdr_mapobs(rdr_t *rdr, const char *str) {
 // is    13 0
 // ...
 // (one sequence of the input file)
-tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
+tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
     const uint32_t T = raw->len;
     // Allocate the tok_t object, the label array is allocated only if they
     // are requested by the user.
     tok_t *tok = xmalloc(sizeof(tok_t) + T * sizeof(char **));
     tok->cnts = xmalloc(sizeof(uint32_t) * T);
     tok->lbl = NULL;
-    tok->segs = xmalloc(sizeof(uint32_t) * T);
-    tok->sege = xmalloc(sizeof(uint32_t) * T);
-    tok->segl = xmalloc(sizeof(uint32_t) * T);
+    if (doTrain == true) {
+        tok->segs = xmalloc(sizeof(uint32_t) * T);
+        tok->sege = xmalloc(sizeof(uint32_t) * T);
+        tok->segl = xmalloc(sizeof(uint32_t) * T);
+    } else {
+        // if do labelling, the following features will not be used.
+        tok->segs = tok->sege = tok->segl = NULL;
+    }
     tok->cur_t = xmalloc(sizeof(char *) * T);
     tok->maxOrder = 3;
     tok->maxLabelLen = 0;
@@ -301,19 +294,21 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
         // to the label array.
         if (lbl == true) {
             tok->lbl[t] = toks[cnt - 1];
-            tok->maxLabelLen = max(tok->maxLabelLen, strlen(toks[cnt-1]));
-            // put the label into label database;
-            qrk_str2id(rdr->lbl, tok->lbl[t]);
+            tok->maxLabelLen = max(tok->maxLabelLen, strlen(toks[cnt - 1]));
+            if (doTrain == true) // put the label into label database;
+                qrk_str2id(rdr->lbl, tok->lbl[t]);
             cnt--;
         }
         tok->cur_t[t] = toks[4]; // the current word;
         // And put the remaining tokens in the tok_t object
 
         // uint32_t i = t;
-        if (t > 0 && (strcmp(tok->lbl[t], tok->lbl[t - 1]) == 0)) {
-            tok->segs[t] = tok->segs[t - 1];
-        } else {
-            tok->segs[t] = t;
+        if (doTrain == true) {
+            if (t > 0 && (strcmp(tok->lbl[t], tok->lbl[t - 1]) == 0)) {
+                tok->segs[t] = tok->segs[t - 1];
+            } else {
+                tok->segs[t] = t;
+            }
         }
         tok->cnts[t] = cnt;
         tok->toks[t] = xmalloc(sizeof(char *) * cnt);
@@ -321,16 +316,18 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
     }
     tok->len = T;
     // set segmentend and segment length.
-    for (int i = T - 1; i >= 0; --i) {
-        if (i < T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
-            tok->sege[i] = tok->sege[i + 1];
-        } else {
-            tok->sege[i] = (uint32_t)i;
+    if (doTrain == true) {
+        for (int i = T - 1; i >= 0; --i) {
+            if (i < T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
+                tok->sege[i] = tok->sege[i + 1];
+            } else {
+                tok->sege[i] = (uint32_t) i;
+            }
+            tok->segl[i] = tok->sege[i] - tok->segs[i];
         }
-        tok->segl[i] = tok->sege[i] - tok->segs[i];
-    }
-    if (lbl == true) {
-        updateReader(tok, rdr);
+        if (lbl == true) {
+            updateReader(tok, rdr);
+        }
     }
     /*
     seq_t *seq = NULL;
@@ -360,12 +357,12 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl) {
  *   to be labeled.
  *   Return NULL if end of file occure before anything as been read.
  */
-tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl) {
+tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
     raw_t *raw = rdr_readraw(rdr, file); // return one seq (one paragraph).lines[T] is the contents of line T of seq
     // info("inside rdr_readseq: raw_t length is %d\n", raw->len);
     if (raw == NULL)
         return NULL;
-    tok_t *tok = rdr_raw2tok(rdr, raw, lbl);
+    tok_t *tok = rdr_raw2tok(rdr, raw, lbl, doTrain);
     rdr_freeraw(raw);
     return tok;
 }
@@ -375,7 +372,7 @@ tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl) {
  *   take and interpret his parameters like the single sequence reading
  *   function.
  */
-dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl) {
+dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
     uint32_t size = 2000;
     dat_t *dat = xmalloc(sizeof(dat_t));
     dat->nseq = 0;
@@ -385,7 +382,7 @@ dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl) {
     // Load sequences
     while (!feof(file)) {
         // Read the next sequence
-        tok_t *seq = rdr_readtok(rdr, file, lbl);
+        tok_t *seq = rdr_readtok(rdr, file, lbl, doTrain);
         if (seq == NULL)
             break;
         // Grow the buffer if needed
@@ -399,7 +396,7 @@ dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl) {
         if (dat->nseq % 1000 == 0)
             info("%7"PRIu32" sequences loaded\n", dat->nseq);
     }
-    // If no sequence readed, cleanup and repport
+    // If no sequence is read, cleanup and report.
     if (dat->nseq == 0) {
         free(dat->tok);
         free(dat);
@@ -444,14 +441,12 @@ void generateForwardStateMap(rdr_t *reader) {
     for (uint64_t id = 0; id < nlbl; ++id) {
         strcpy(str, qrk_id2str(reader->lbl, id));
         qrk_str2id(forwardStateMap, str);
-        // info("the forwardstatemap %s\n", str);
     }
     for (uint64_t id = 0; id < reader->npats; ++id) {
         strcpy(str, qrk_id2str(reader->pats, id));
         labelPat_t *strStruct = generateLabelPatStruct(str);
         uint32_t size = strStruct->segNum - 1;
         for (int i = 0; i < size; ++i) {
-            // info("the forwardstatemap %s\n", strStruct->prefixes[i]);
             qrk_str2id(forwardStateMap, strStruct->prefixes[i]);
         }
     }
@@ -478,7 +473,7 @@ void generateBackwardStateMap(rdr_t *reader) {
         }
     }
     qrk_lock(reader->backwardStateMap, true);
-    reader->nbackwardStateMap = qrk_count(reader->backwardStateMap);
+    // reader->nbackwardStateMap = qrk_count(reader->backwardStateMap);
     return;
 }
 
@@ -496,6 +491,13 @@ void rdr_load(rdr_t *rdr, FILE *file) {
 
     if (fscanf(file, "#rdr#%d\n", &rdr->maxSegment) != 1)
         fatal(err);
+    if (fscanf(file, "#maxMemory#%"SCNu64"\n", &rdr->nlbl) != 1)
+        fatal(err);
+    for (uint64_t i = 0; i < rdr->nlbl; ++i) {
+        if (fscanf(file, "%d\n", &rdr->maxMemory[i]) != 1)
+            fatal(err);
+    }
+
     qrk_load(rdr->lbl, file);
     qrk_load(rdr->obs, file);
     qrk_load(rdr->pats, file);
@@ -512,6 +514,10 @@ void rdr_load(rdr_t *rdr, FILE *file) {
 void rdr_save(const rdr_t *rdr, FILE *file) {
     if (fprintf(file, "#rdr#%d\n", rdr->maxSegment) < 0)
         pfatal("cannot write to file");
+    fprintf(file, "#maxMemory#%"PRIu64"\n", rdr->nlbl);
+    for (uint64_t i = 0; i < rdr->nlbl; ++i) {
+        fprintf(file, "%d\n", rdr->maxMemory[i]);
+    }
     qrk_save(rdr->lbl, file);
     qrk_save(rdr->obs, file);
     qrk_save(rdr->pats, file);

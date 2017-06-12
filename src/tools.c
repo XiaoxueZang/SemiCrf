@@ -132,11 +132,14 @@ char *xstrdup(const char *str) {
  */
 char *ns_readstr(FILE *file) {
 	uint32_t len;
-	if (fscanf(file, "%"SCNu32":", &len) != 1)
+	if (fscanf(file, "%"SCNu32":", &len) != 1) {
+		// info("buf is %u.\n", len);
 		pfatal("cannot read from file");
+	}
 	char *buf = xmalloc(len + 1);
-	if (fread(buf, len, 1, file) != 1)
+	if ((len != 0) && (fread(buf, len, 1, file) != 1)) {
 		pfatal("cannot read from file");
+	}
 	if (fgetc(file) != ',')
 		fatal("invalid format");
 	buf[len] = '\0';
