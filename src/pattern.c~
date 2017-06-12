@@ -67,7 +67,7 @@ labelPat_t *generateLabelPatStruct(char *labelPat) {
     labelPatStruct->suffixes[segNum] = malloc(sizeof(char) * len);
     for (uint32_t i = 0; i < len; ++i) {
         char a = *(labelPat + i);
-        if ((a == '|') | (a == '\0')) {
+        if (a == '|' | a == '\0') {
             memcpy(labelPatStruct->suffixes[(labelPatStruct->order) - segNum], labelPat, i);
             *(labelPatStruct->suffixes[(labelPatStruct->order) - segNum] + i) = '\0';
             // info("%u suffix is %s.\n", labelPatStruct->order-segNum, labelPatStruct->suffixes[labelPatStruct->order-segNum]);
@@ -132,6 +132,7 @@ uint64_t getLastLabelId(rdr_t *rdr, const char *p) {
     return id;
 }
 
+// some little problem.
 uint64_t getLongestIndexId(char *labelPat, qrk_t *qrk) {
     labelPat_t *labelPatStruct = generateLabelPatStruct(labelPat);
     qrk_lock(qrk, true);

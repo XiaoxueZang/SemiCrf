@@ -40,7 +40,8 @@ rdr_t *rdr_new(bool doSemi) {
         rdr->maxSegment = 1;
     else
         rdr->maxSegment = -1;
-    rdr->nlbl = rdr->nforwardStateMap = rdr->npats = 0;
+    rdr->npats = rdr->npats = 0;
+    rdr->nlbl = rdr->nforwardStateMap = 0;
     rdr->lbl = qrk_new();
     rdr->obs = qrk_new();
     rdr->pats = qrk_new();
