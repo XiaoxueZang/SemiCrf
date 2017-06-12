@@ -32,7 +32,7 @@ void updateMaxMemory(tok_t *tok, rdr_t *reader) {
             char *label = tok->lbl[segStart];
             id = qrk_str2id(reader->lbl, label);
 
-            if ((reader->maxMemory[id]) < (tok->segl[segStart] + 1)) {
+            if ((reader->maxMemory[id]) < (int)(tok->segl[segStart] + 1)) {
                 reader->maxMemory[id] = tok->segl[segStart] + 1;
                 reader->maxSegment = max(reader->maxSegment, reader->maxMemory[id]);
             }

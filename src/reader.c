@@ -171,7 +171,7 @@ char *rdr_readline(FILE *file) {
  *   file or by an empty line. Return NULL if file end was reached before any
  *   sequence was read.
  */
-raw_t *rdr_readraw(rdr_t *rdr, FILE *file) {
+raw_t *rdr_readraw(FILE *file) {
     if (feof(file))
         return NULL;
     // Prepare the raw sequence object
@@ -302,7 +302,7 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
     // set segment end and segment length.
     if (doTrain == true) {
         for (int i = T - 1; i >= 0; --i) {
-            if (i < T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
+            if (i < (int)T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
                 tok->sege[i] = tok->sege[i + 1];
             } else {
                 tok->sege[i] = (uint32_t) i;
@@ -324,7 +324,7 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
  *   Return NULL if the end of file occurs before anything as been read.
  */
 tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
-    raw_t *raw = rdr_readraw(rdr, file);
+    raw_t *raw = rdr_readraw(file);
     // it returns one seq (one paragraph).lines[T] is the contents of line T of seq
     if (raw == NULL)
         return NULL;
@@ -389,9 +389,9 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
     qrk_str2id(rdr->featList, "");
     while (segStart < tok->len) {
         segEnd = tok->sege[segStart];
-        char *labelPat = generateLabelPattern(tok, segStart, segEnd);
+        char *labelPat = generateLabelPattern(tok, segStart);
 
-        feature_dat_t *features = generateObs(tok, rdr, segStart, segEnd, labelPat);
+        feature_dat_t *features = generateObs(tok, segStart, segEnd, labelPat);
         for (uint32_t id = 0; id < features->len; ++id) {
             putIntoDatabase(features->features[id]->obs, features->features[id]->pats, rdr);
         }
@@ -413,7 +413,7 @@ void generateForwardStateMap(rdr_t *reader) {
         strcpy(str, qrk_id2str(reader->pats, id));
         labelPat_t *strStruct = generateLabelPatStruct(str);
         uint32_t size = strStruct->segNum - 1;
-        for (int i = 0; i < size; ++i) {
+        for (uint32_t i = 0; i < size; ++i) {
             qrk_str2id(forwardStateMap, strStruct->prefixes[i]);
         }
     }
@@ -424,11 +424,11 @@ void generateForwardStateMap(rdr_t *reader) {
 
 void generateBackwardStateMap(rdr_t *reader) {
     uint32_t size = 50;
-    int lastLabel;
+    uint64_t lastLabel;
     char *p = xmalloc(sizeof(char) * size);
     for (uint64_t id = 0; id < reader->nforwardStateMap; ++id) {
         strcpy(p, qrk_id2str(reader->forwardStateMap, id));
-        lastLabel = (strcmp(p, "") == 0) ? -1 : (int) getLastLabelId(reader, p);
+        lastLabel = (strcmp(p, "") == 0) ? none : (int) getLastLabelId(reader, p);
 
         for (uint64_t yid = 0; yid < reader->nlbl; ++yid) {
             if ((yid != lastLabel) || (reader->maxSegment == 1)) {

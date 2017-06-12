@@ -16,7 +16,7 @@
 
 // I assume that label is only one char.
 // Unit Tested
-char *generateLabelPattern(tok_t *toks, uint32_t segStart, uint32_t segEnd) {
+char *generateLabelPattern(tok_t *toks, uint32_t segStart) {
     char *labelPat = xmalloc(sizeof(char) * (toks->maxOrder) * (toks->maxLabelLen + 1));
     uint32_t index = 0;
     uint32_t pos = segStart;
@@ -85,7 +85,7 @@ labelPat_t *generateLabelPatStruct(char *labelPat) {
     return labelPatStruct;
 }
 
-feature_dat_t *generateObs(tok_t *tok, rdr_t *reader, uint32_t segStart, uint32_t segEnd, char *labelPat) {
+feature_dat_t *generateObs(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
     uint32_t size = 5000;
     feature_dat_t *featurePack = xmalloc(sizeof(feature_dat_t));
     featurePack->len = 0;

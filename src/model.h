@@ -5,15 +5,13 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#include "wapiti.h"
 #include "options.h"
 #include "sequence.h"
 #include "reader.h"
+#include "quark.h"
 
 typedef struct timeval tms_t;
-typedef struct rdr_s rdr_t;
-typedef struct qrk_s qrk_t;
-// typedef struct id_map_s id_map_t;
+// typedef struct rdr_s rdr_t;
 
 
 typedef struct transition_map_s transition_map_t;

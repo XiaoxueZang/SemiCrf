@@ -5,14 +5,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "wapiti.h"
 #include "model.h"
 #include "options.h"
 #include "quark.h"
 #include "reader.h"
+#include "pattern.h"
 #include "tools.h"
 #include "vmath.h"
-#include "pattern.h"
+#include "features.h"
 
 /* mdl_new:
  *   Allocate a new empty model object linked with the given reader. The model
@@ -41,7 +41,6 @@ mdl_t *mdl_new(rdr_t *rdr) {
  *   Free all memory used by a model object inculding the reader and datasets
  *   loaded in the model.
  */
-// ATTENTION: work needed.
 void mdl_free(mdl_t *mdl) {
     free(mdl->lastForwardStateLabel);
     free(mdl->backwardTransition);
@@ -137,58 +136,6 @@ void mdl_sync(mdl_t *mdl, bool doTrain) {
     return;
 }
 
-/*
-    // Allocate the observations datastructure. If the model is empty or
-    // discarded, a new one iscreated, else the old one is expanded.
-    char *kind = xrealloc(mdl->kind, sizeof(char) * O);
-    uint64_t *uoff = xrealloc(mdl->uoff, sizeof(uint64_t) * O);
-    uint64_t *boff = xrealloc(mdl->boff, sizeof(uint64_t) * O);
-    mdl->kind = kind;
-    mdl->uoff = uoff;
-    mdl->boff = boff;
-    // Now, we can setup the features. For each new observations we fill the
-    // kind and offsets arrays and count total number of features as well.
-    // uint64_t F = oldF;
-    for (uint64_t o = oldO; o < O; o++) {
-        const char *obs = qrk_id2str(mdl->reader->obs, o);
-        switch (obs[0]) {
-            case 'u':
-                kind[o] = 1;
-                break;
-            case 'b':
-                kind[o] = 2;
-                break;
-            case '*':
-                kind[o] = 3;
-                break;
-        }
-        if (kind[o] & 1)
-            uoff[o] = F, F += Y;
-        if (kind[o] & 2)
-            boff[o] = F, F += Y * Y;
-    }
-    mdl->nftr = F;
-    // We can finally grow the features weights vector itself. We set all
-    // the new features to 0.0 but don't touch the old ones.
-    // This is a bit tricky as aligned malloc cannot be simply grown so we
-    // have to allocate a new vector and copy old values ourself.
-    if (oldF != 0) {
-        double *new = xvm_new(F);
-        for (uint64_t f = 0; f < oldF; f++)
-            new[f] = mdl->theta[f];
-        xvm_free(mdl->theta);
-        mdl->theta = new;
-    } else {
-        mdl->theta = xvm_new(F);
-    }
-    for (uint64_t f = oldF; f < F; f++)
-        mdl->theta[f] = 0.0;
-    // And lock the databases
-    qrk_lock(mdl->reader->lbl, true);
-    qrk_lock(mdl->reader->obs, true);
-}
-*/
-
 void buildForwardTransition(mdl_t *mdl) {
     info("inside buildForwardTransition\n");
     rdr_t *reader = mdl->reader;
@@ -206,7 +153,7 @@ void buildForwardTransition(mdl_t *mdl) {
         const char *fs = qrk_id2str(reader->forwardStateMap, fsid);
         lastForwardStateLabel[fsid] = (strcmp(fs, "") == 0) ? -1 : (int) getLastLabelId(reader, fs);
         for (uint32_t lbid = 0; lbid < mdl->nlbl; ++lbid) {
-            if ((lbid != lastForwardStateLabel[fsid]) || (reader->maxSegment == 1)) {
+            if ((lbid != (uint32_t) lastForwardStateLabel[fsid]) || (reader->maxSegment == 1)) {
                 const char *pky = (strcmp(fs, "") == 0) ? qrk_id2str(reader->lbl, lbid) : concat(
                         concat(qrk_id2str(reader->lbl, lbid), "|"), fs);
                 index = getLongestIndexId((char *) pky, reader->forwardStateMap);
@@ -232,7 +179,7 @@ void buildBackwardTransition(mdl_t *mdl) {
         const char *si = qrk_id2str(mdl->reader->backwardStateMap, siId);
         lastLabelId = strcmp(si, "") == 0 ? -1 : (int) getLastLabelId(mdl->reader, si);
         for (uint32_t lbId = 0; lbId < mdl->nlbl; ++lbId) {
-            if ((lbId != lastLabelId) || (mdl->reader->maxSegment == 1)) {
+            if ((lbId != (uint32_t) lastLabelId) || (mdl->reader->maxSegment == 1)) {
                 siy = concat(concat(qrk_id2str(lbQrk, lbId), "|"), si);
                 sk = getLongestSuffix(siy, mdl->reader->backwardStateMap);
                 (*poi)[siId][lbId] = (int) qrk_str2id(mdl->reader->backwardStateMap, sk);
@@ -311,7 +258,7 @@ void generateFeatureMap(mdl_t *mdl) {
             f = concat(concat(qrk_id2str(mdl->reader->pats, i), "_"), qrk_id2str(mdl->reader->obs, j));
             uint64_t id = qrk_str2id(mdl->reader->featList, f);
             if (id != none)
-                mdl->featureMap[i *(mdl->nobs) + j] = id;
+                mdl->featureMap[i * (mdl->nobs) + j] = id;
         }
     }
     free(f);
@@ -327,11 +274,11 @@ void generateSentenceObs(mdl_t *mdl) {
         tok->observationMapjp = xmalloc(sizeof(id_map_t) * T * S);
         id_map_t (*poi)[T][S] = (void *) tok->observationMapjp;
         for (uint32_t i = 0; i < T; ++i) {
-            for (uint32_t j = i; j < T && j - i < S; ++j) {
+            for (uint32_t j = i; j < T && j - i < (uint32_t) S; ++j) {
                 (*poi)[i][j - i].len = 0;
                 (*poi)[i][j - i].ids = xmalloc(sizeof(uint64_t) * mdl->nobs);
-                char *labelPat = generateLabelPattern(tok, i, j);
-                feature_dat_t *features = generateObs(tok, mdl->reader, i, j, labelPat);
+                char *labelPat = generateLabelPattern(tok, i);
+                feature_dat_t *features = generateObs(tok, i, j, labelPat);
                 qrk_t *set = qrk_new();
                 qrk_lock(set, true);
                 for (uint32_t id = 0; id < features->len; ++id) {
@@ -364,7 +311,7 @@ void generateEmpiricalFeatureScore(mdl_t *mdl) {
 
     for (uint32_t n = 0; n < L; ++n) {
         tok_t *tok = dat->tok[n];
-        uint32_t T= tok->len;
+        uint32_t T = tok->len;
         tok->empiricalScore = xvm_new(F);
         double *emScore = tok->empiricalScore;
         for (uint64_t i = 0; i < F; ++i) {
@@ -374,8 +321,8 @@ void generateEmpiricalFeatureScore(mdl_t *mdl) {
         segStart = 0;
         while (segStart < T) {
             segEnd = tok->sege[segStart];
-            observationMapjd = &((*obsMap)[segStart][segEnd-segStart]);
-            char *labelPat = generateLabelPattern(tok, segStart, segEnd);
+            observationMapjd = &((*obsMap)[segStart][segEnd - segStart]);
+            char *labelPat = generateLabelPattern(tok, segStart);
             sId = qrk_str2id(mdl->reader->backwardStateMap, labelPat);
             for (patIndex = 0; patIndex < mdl->allSuffixes[sId].len; ++patIndex) {
                 for (obIndex = 0; obIndex < observationMapjd->len; ++obIndex) {

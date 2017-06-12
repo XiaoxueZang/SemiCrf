@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "wapiti.h"
+
 #include "gradient.h"
 #include "model.h"
 #include "quark.h"
@@ -17,6 +17,8 @@
 #include "tools.h"
 #include "decoder.h"
 #include "vmath.h"
+#include "features.h"
+#include "pattern.h"
 
 /******************************************************************************
  * Sequence tagging
@@ -79,7 +81,7 @@ void tag_viterbi(mdl_t *mdl, const tok_t *seq,
                     pkId = mdl->forwardTransition[i].idsOne[k];
                     pkyId = mdl->forwardTransition[i].idsTwo[k];
                     pky = (char *) qrk_id2str(mdl->reader->backwardStateMap, pkyId);
-                    feature_dat_t *features = generateObs((tok_t *) seq, mdl->reader, j - d, j, pky);
+                    feature_dat_t *features = generateObs((tok_t *) seq, j - d, j, pky);
                     double featureScore = 0;
                     for (l = 0; l < features->len; ++l) {
                         char *f = concat(concat(features->features[l]->pats, "_"), features->features[l]->obs);
@@ -148,7 +150,7 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
     while (!feof(fin)) {
         // So, first read an input sequence keeping the raw_t object
         // available, and label it with Viterbi.
-        raw_t *raw = rdr_readraw(mdl->reader, fin);
+        raw_t *raw = rdr_readraw(fin);
         if (raw == NULL)
             break;
         tok_t *toks = rdr_raw2tok(mdl->reader, raw,
