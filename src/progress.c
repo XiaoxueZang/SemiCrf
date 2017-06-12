@@ -49,7 +49,7 @@ bool uit_stop = false;
  *   Signal handler to catch interupt signal. When a signal is received, the
  *   trainer is aksed to stop as soon as possible leaving the model in a clean
  *   state. We don't reinstall the handler so if user send a second interupt
- *   signal, the program will stop imediatly. (to cope with BSD system, we even
+ *   signal, the program will stop immediately. (to cope with BSD system, we even
  *   reinstall explicitly the default handler)
  */
 static void uit_signal(int sig) {
@@ -68,7 +68,7 @@ void  uit_setup(mdl_t *mdl) {
 	gettimeofday(&mdl->timer, NULL);
 	if (mdl->opt->stopwin != 0)
 		mdl->werr = xmalloc(sizeof(double) * mdl->opt->stopwin);
-	// mdl->wcnt = mdl->wpos = 0;
+	 mdl->wcnt = mdl->wpos = 0;
 }
 
 /* uit_cleanup:
@@ -91,7 +91,7 @@ void uit_cleanup(mdl_t *mdl) {
  *   This function return true if the trainer have to keep training the model
  *   and false if he must stop, so this is were we will implement the trainer
  *   independant stoping criterion.
- */ /*
+ */
 bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 	// First we just compute the error rate on devel or train data
 	double te, se;
@@ -117,7 +117,7 @@ bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 	info(" time=%.2fs/%.2fs", tm, mdl->total);
 	info("\n");
 	// If requested, check the error rate stoping criterion. We check if the
-	// error rate is stable enought over a few iterations.
+	// error rate is stable enough over a few iterations.
 	bool res = true;
 	if (mdl->opt->stopwin != 0) {
 		mdl->werr[mdl->wpos] = te;
@@ -138,6 +138,6 @@ bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
 		return false;
 	return res;
 }
- */
+
 
 

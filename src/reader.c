@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "wapiti.h"
 #include "pattern.h"
 #include "quark.h"
 #include "reader.h"
@@ -24,24 +23,15 @@
  *   the input data in order to produce seq_t objects representing interned
  *   sequences.
  *
- *   This is where the sequence will go through the tree steps to build seq_t
- *   objects used internally. There is two way do do this. First the simpler is
+ *   This is where the sequence will go through the tree steps to build tok_t
+ *   objects used internally. There is one way to do this. First the simpler is
  *   to use the rdr_readseq function which directly read a sequence from a file
- *   and convert it to a seq_t object transparently. This is how the training
+ *   and convert it to a tok_t object transparently. This is how the training
  *   and development data are loaded.
- *   The second way consist of read a raw sequence with rdr_readraw and next
- *   converting it to a seq_t object with rdr_raw2seq. This allow the caller to
- *   keep the raw sequence and is used by the tagger to produce a clean output.
- *
- *   There is no public interface to the tok_t object as it is intended only for
- *   internal use in the reader as an intermediate step to apply patterns.
  ******************************************************************************/
 
 /* rdr_new:
- *   Create a new empty reader object. If no patterns are loaded before you
- *   start using the reader the input data are assumed to be already prepared
- *   list of features. They must either start with a prefix 'u', 'b', or '*', or
- *   you must set autouni to true in order to automatically add a 'u' prefix.*
+ *   Create a new empty reader object.
 */
 rdr_t *rdr_new(bool doSemi) {
     rdr_t *rdr = xmalloc(sizeof(rdr_t));
@@ -88,27 +78,27 @@ void rdr_freeraw(raw_t *raw) {
     free(raw);
 }
 
+/* idmap_free:
+ *   Free all memory used by a id_map_t object.
+ */
 void idmap_free(id_map_t *id) {
     free(id->ids);
     free(id);
 }
 
-/* rdr_freeseq:
- *   Free all memory used by a seq_t object.
+/* rdr_freetok:
+ *   Free all memory used by a tok_t object.
  */
 void rdr_freetok(tok_t *tok, bool lbl) {
-    // free(tok->cur_t[0]);
-    free(tok->cur_t);
-    // free(tok->lbl[0]);
     for (uint32_t t = 0; t < tok->len; t++) {
         if (tok->cnts[t] == 0)
             continue;
         free(tok->toks[t][0]);
         free(tok->toks[t]);
     }
+    free(tok->cur_t);
     free(tok->cnts);
     if (lbl == true) {
-        // free(tok->lbl[0]);
         free(tok->lbl);
     }
     if (tok->sege != NULL) {
@@ -176,11 +166,6 @@ char *rdr_readline(FILE *file) {
     return xrealloc(buffer, len + 1);
 }
 
-/* rdr_loadpat:
- *   Load and compile patterns from given file and store them in the reader. As
- *   we compile patterns, syntax errors in them will be raised at this time.
- */
-
 /* rdr_readraw:
  *   Read a raw sequence from given file: a set of lines terminated by end of
  *   file or by an empty line. Return NULL if file end was reached before any
@@ -232,16 +217,15 @@ raw_t *rdr_readraw(rdr_t *rdr, FILE *file) {
     return raw;
 }
 
-/* rdr_raw2seq:
+/* rdr_raw2tok:
  *   Convert a raw sequence to a tok_t object suitable for training or
  *   labelling. If lbl is true, the last column is assumed to be a label and
  *   interned also.
+ *   sequence example: (one line one token)
+ *   angle 14 1
+ *   is    13 0
+ *   ...
  */
-// sequence ex:
-// angle 14 1
-// is    13 0
-// ...
-// (one sequence of the input file)
 tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
     const uint32_t T = raw->len;
     // Allocate the tok_t object, the label array is allocated only if they
@@ -274,13 +258,14 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
         while (isspace(*src))
             src++;
         char *line = xstrdup(src);
-        // Split one line in tokens. Structure info into toks (char **) and then put the info in toks into tok.
+        // Split one line in tokens. Structure info into toks (char **)
+        // and then put the info in toks into tok.
         // The final image of toks:
         // [['a', '1'], ['b', '0'], ..., ]
         char *toks[strlen(line) / 2 + 1];
         uint32_t cnt = 0;
         while (*line != '\0') {
-            toks[cnt++] = line;   // toks[0] = &(a), the address of that token (a)
+            toks[cnt++] = line;
             while (*line != '\0' && !isspace(*line))
                 line++;
             if (*line == '\0')
@@ -300,9 +285,8 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
             cnt--;
         }
         tok->cur_t[t] = toks[4]; // the current word;
-        // And put the remaining tokens in the tok_t object
 
-        // uint32_t i = t;
+        // And put the remaining tokens in the tok_t object
         if (doTrain == true) {
             if (t > 0 && (strcmp(tok->lbl[t], tok->lbl[t - 1]) == 0)) {
                 tok->segs[t] = tok->segs[t - 1];
@@ -315,7 +299,7 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
         memcpy(tok->toks[t], toks, sizeof(char *) * cnt);
     }
     tok->len = T;
-    // set segmentend and segment length.
+    // set segment end and segment length.
     if (doTrain == true) {
         for (int i = T - 1; i >= 0; --i) {
             if (i < T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
@@ -329,37 +313,19 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
             updateReader(tok, rdr);
         }
     }
-    /*
-    seq_t *seq = NULL;
-    // the following part should be removed and be executed after reading all the sequences.
-    // Convert the tok_t to a seq_t
-    seq = rdr_rawtok2seq(rdr, tok);
-
-    // Before returning the sequence, we have to free the tok_t
-    for (uint32_t t = 0; t < T; t++) {
-        if (tok->cnts[t] == 0)
-            continue;
-        free(tok->toks[t][0]);
-        free(tok->toks[t]);
-    }
-    free(tok->cnts);
-    if (lbl == true)
-        free(tok->lbl);
-    free(tok);
-     */
     return tok;
 }
 
-/* rdr_readseq:
- *   Simple wrapper around rdr_readraw and rdr_raw2seq to directly read a
- *   sequence as a seq_t object from file. This take care of all the process
+/* rdr_readtok:
+ *   Simple wrapper around rdr_readraw and rdr_raw2tok to directly read a
+ *   sequence as a tok_t object from file. This take care of all the process
  *   and correctly free temporary data. If lbl is true the sequence is assumed
  *   to be labeled.
- *   Return NULL if end of file occure before anything as been read.
+ *   Return NULL if the end of file occurs before anything as been read.
  */
 tok_t *rdr_readtok(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
-    raw_t *raw = rdr_readraw(rdr, file); // return one seq (one paragraph).lines[T] is the contents of line T of seq
-    // info("inside rdr_readseq: raw_t length is %d\n", raw->len);
+    raw_t *raw = rdr_readraw(rdr, file);
+    // it returns one seq (one paragraph).lines[T] is the contents of line T of seq
     if (raw == NULL)
         return NULL;
     tok_t *tok = rdr_raw2tok(rdr, raw, lbl, doTrain);
@@ -388,7 +354,7 @@ dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
         // Grow the buffer if needed
         if (dat->nseq == size) {
             size *= 1.4;
-            dat->tok = xrealloc(dat->tok, sizeof(seq_t *) * size);
+            dat->tok = xrealloc(dat->tok, sizeof(tok_t *) * size);
         }
         // And store the sequence
         dat->tok[dat->nseq++] = seq;
@@ -404,7 +370,7 @@ dat_t *rdr_readdat(rdr_t *rdr, FILE *file, bool lbl, bool doTrain) {
     }
     // Adjust the dataset size and return
     if (size > dat->nseq)
-        dat->tok = xrealloc(dat->tok, sizeof(seq_t *) * dat->nseq);
+        dat->tok = xrealloc(dat->tok, sizeof(tok_t *) * dat->nseq);
     if (lbl == true) {
         rdr->nlbl = qrk_count(rdr->lbl);
         rdr->npats = qrk_count(rdr->pats);
@@ -418,7 +384,8 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
     updateMaxMemory(tok, rdr);
     uint32_t segStart = 0;
     uint32_t segEnd = 0;
-    // put an empty feature inside feature database. It is for the following gradient computatinon.
+    // put an empty feature inside feature database.
+    // It is for the following gradient computation.
     qrk_str2id(rdr->featList, "");
     while (segStart < tok->len) {
         segEnd = tok->sege[segStart];
@@ -473,7 +440,6 @@ void generateBackwardStateMap(rdr_t *reader) {
         }
     }
     qrk_lock(reader->backwardStateMap, true);
-    // reader->nbackwardStateMap = qrk_count(reader->backwardStateMap);
     return;
 }
 

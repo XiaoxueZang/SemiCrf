@@ -11,7 +11,7 @@ extern bool uit_stop;
 
 void uit_setup(mdl_t *mdl);
 void uit_cleanup(mdl_t *mdl);
-// bool uit_progress(mdl_t *mdl, uint32_t it, double obj);
+bool uit_progress(mdl_t *mdl, uint32_t it, double obj);
 
 #endif
 

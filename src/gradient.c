@@ -469,7 +469,6 @@ void grd_stfree(grd_st_t *grd_st) {
  */
 void grd_dospl(grd_st_t *grd_st, const tok_t *tok) {
     grd_stcheck(grd_st, tok->len);
-    // rdr_t *rdr = grd_st->mdl->reader;
     grd_docrf(grd_st, tok);
 }
 

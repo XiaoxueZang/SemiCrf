@@ -104,7 +104,7 @@ const opt_t opt_defaults = {
 	.bcd   = {.kappa  = 1.5},
 	.rprop = {.stpmin = 1e-8, .stpmax = 50.0, .stpinc = 1.2, .stpdec = 0.5,
 	          .cutoff = false},
-	.label   = false,    .check   = false, .outsc = false,
+	.label   = false,    .check   = true, .outsc = false,
 	.lblpost = false,    .nbest   = 1,     .force = false,
 	.prec    = 5,        .all     = false,
 };

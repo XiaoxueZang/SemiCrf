@@ -110,7 +110,7 @@ void tag_viterbi(mdl_t *mdl, const tok_t *seq,
     while (curPos >= 0) {
         uint32_t prevPos = traceMax->prev_pos;
         uint64_t prevPat = traceMax->pkId;
-        for (int32_t n = prevPos; n < curPos; ++n) {
+        for (int32_t n = prevPos + 1; n <= curPos; ++n) {
             out[n] = (uint32_t) traceMax->label;
         }
         curPos = prevPos;
@@ -120,107 +120,6 @@ void tag_viterbi(mdl_t *mdl, const tok_t *seq,
     return;
 }
 
-/* tag_nbviterbi:
- *   This function implement the Viterbi algorithm in order to decode the N-most
- *   probable sequences of labels according to the model. It can be used to
- *   compute only the best one and will return the same sequence than the
- *   previous function but will be slower to do it.
- */ /*
-void tag_nbviterbi(mdl_t *mdl, const seq_t *seq, uint32_t N,
-                   uint32_t out[][N], double sc[], double psc[][N]) {
-	const uint32_t Y = mdl->nlbl;
-	const uint32_t T = seq->len;
-	double   *vpsi  = xvm_new(T * Y * Y);
-	uint32_t *vback = xmalloc(sizeof(uint32_t) * T * Y * N);
-	double   (*psi) [T][Y    ][Y] = (void *)vpsi;
-	uint32_t (*back)[T][Y * N]    = (void *)vback;
-	double *cur = xmalloc(sizeof(double) * Y * N);
-	double *old = xmalloc(sizeof(double) * Y * N);
-	// We first compute the scores for each transitions in the lattice of
-	// labels.
-	int op;
-	if (mdl->type == 1)
-		op = tag_memmsc(mdl, seq, vpsi);
-	else if (mdl->opt->lblpost)
-		op = tag_postsc(mdl, seq, (double *)psi);
-	else
-		op = tag_expsc(mdl, seq, (double *)psi);
-	if (mdl->opt->force)
-		tag_forced(mdl, seq, vpsi, op);
-	// Here also, it's classical but we have to keep the N best paths
-	// leading to each nodes of the lattice instead of only the best one.
-	// This mean that code is less trivial and the current implementation is
-	// not the most efficient way to do this but it works well and is good
-	// enough for the moment.
-	// We first build the list of all incoming arcs from all paths from all
-	// N-best nodes and next select the N-best one. There is a lot of room
-	// here for later optimisations if needed.
-	for (uint32_t y = 0, d = 0; y < Y; y++) {
-		cur[d++] = (*psi)[0][0][y];
-		for (uint32_t n = 1; n < N; n++)
-			cur[d++] = -DBL_MAX;
-	}
-	for (uint32_t t = 1; t < T; t++) {
-		for (uint32_t d = 0; d < Y * N; d++)
-			old[d] = cur[d];
-		for (uint32_t y = 0; y < Y; y++) {
-			// 1st, build the list of all incoming
-			double lst[Y * N];
-			for (uint32_t yp = 0, d = 0; yp < Y; yp++) {
-				for (uint32_t n = 0; n < N; n++, d++) {
-					lst[d] = old[d];
-					if (op)
-						lst[d] *= (*psi)[t][yp][y];
-					else
-						lst[d] += (*psi)[t][yp][y];
-				}
-			}
-			// 2nd, init the back with the N first
-			uint32_t *bk = &(*back)[t][y * N];
-			for (uint32_t n = 0; n < N; n++)
-				bk[n] = n;
-			// 3rd, search the N highest values
-			for (uint32_t i = N; i < N * Y; i++) {
-				// Search the smallest current value
-				uint32_t idx = 0;
-				for (uint32_t n = 1; n < N; n++)
-					if (lst[bk[n]] < lst[bk[idx]])
-						idx = n;
-				// And replace it if needed
-				if (lst[i] > lst[bk[idx]])
-					bk[idx] = i;
-			}
-			// 4th, get the new scores
-			for (uint32_t n = 0; n < N; n++)
-				cur[y * N + n] = lst[bk[n]];
-		}
-	}
-	// Retrieving the best paths is similar to classical Viterbi except that
-	// we have to search for the N bet ones and there is N time more
-	// possibles starts.
-	for (uint32_t n = 0; n < N; n++) {
-		uint32_t bst = 0;
-		for (uint32_t d = 1; d < Y * N; d++)
-			if (cur[d] > cur[bst])
-				bst = d;
-		if (sc != NULL)
-			sc[n] = cur[bst];
-		cur[bst] = -DBL_MAX;
-		for (uint32_t t = T; t > 0; t--) {
-			const uint32_t yp = (t != 1) ? (*back)[t - 1][bst] / N: 0;
-			const uint32_t y  = bst / N;
-			out[t - 1][n] = y;
-			if (psc != NULL)
-				psc[t - 1][n] = (*psi)[t - 1][yp][y];
-			bst = (*back)[t - 1][bst];
-		}
-	}
-	free(old);
-	free(cur);
-	free(vback);
-	xvm_free(vpsi);
-}
-*/
 /* tag_label:
  *   Label a data file using the current model. This output an almost exact copy
  *   of the input file with an additional column with the predicted label. If
@@ -262,7 +161,7 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
             tag_viterbi(mdl, toks, (uint32_t *) out, scs, (double *) psc);
         else
             fatal("Do not support the N-most probable labelling.");
-        // Next we output the raw sequence with an aditional column for
+        // Next we output the raw sequence (current token) with an additional column for
         // the predicted labels
         for (uint32_t n = 0; n < N; n++) {
             if (mdl->opt->outsc)
@@ -270,7 +169,10 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
             for (uint32_t t = 0; t < T; t++) {
                 if (!mdl->opt->label) {
                     fprintf(fout, "%s\t", toks->toks[t][4]);
-                    fprintf(fout, "%s\t", toks->toks[t][toks->len - 1]);
+                    /* if want to choose to output the true label too, uncomment the following.
+                     * if (mdl->opt->check)
+                     *      fprintf(fout, "%s\t", toks->lbl[t]);
+                     */
                 }
                 uint32_t lbl = out[t * N + n];
                 const char *lblstr = qrk_id2str(lbls, lbl);

@@ -191,7 +191,7 @@ const char *qrk_id2str(const qrk_t *qrk, uint64_t id) {
     if (id >= qrk->count) {
         // previous ver: fatal("invalid identifier")
         info("id is %u\n", id);
-        fatal("invalid identifier");
+        // fatal("invalid identifier");
         // return "none";
     }
     return qrk->leafs[id]->key;
