@@ -53,22 +53,22 @@ bool uit_stop = false;
  *   reinstall explicitly the default handler)
  */
 static void uit_signal(int sig) {
-	signal(sig, SIG_DFL);
-	uit_stop = true;
+    signal(sig, SIG_DFL);
+    uit_stop = true;
 }
 
 /* uit_setup:
  *   Install the signal handler for clean early stop from the user if possible
  *   and start the timer.
  */
-void  uit_setup(mdl_t *mdl) {
-	uit_stop = false;
-	if (signal(SIGINT, uit_signal) == SIG_ERR)
-		warning("failed to set signal handler, no clean early stop");
-	gettimeofday(&mdl->timer, NULL);
-	if (mdl->opt->stopwin != 0)
-		mdl->werr = xmalloc(sizeof(double) * mdl->opt->stopwin);
-	 mdl->wcnt = mdl->wpos = 0;
+void uit_setup(mdl_t *mdl) {
+    uit_stop = false;
+    if (signal(SIGINT, uit_signal) == SIG_ERR)
+        warning("failed to set signal handler, no clean early stop");
+    gettimeofday(&mdl->timer, NULL);
+    if (mdl->opt->stopwin != 0)
+        mdl->werr = xmalloc(sizeof(double) * mdl->opt->stopwin);
+    mdl->wcnt = mdl->wpos = 0;
 }
 
 /* uit_cleanup:
@@ -76,12 +76,12 @@ void  uit_setup(mdl_t *mdl) {
  *   interrupt.
  */
 void uit_cleanup(mdl_t *mdl) {
-	unused(mdl);
-	if (mdl->opt->stopwin != 0) {
-		free(mdl->werr);
-		mdl->werr = NULL;
-	}
-	signal(SIGINT, SIG_DFL);
+    unused(mdl);
+    if (mdl->opt->stopwin != 0) {
+        free(mdl->werr);
+        mdl->werr = NULL;
+    }
+    signal(SIGINT, SIG_DFL);
 }
 
 /* uit_progress:
@@ -93,50 +93,51 @@ void uit_cleanup(mdl_t *mdl) {
  *   independant stoping criterion.
  */
 bool uit_progress(mdl_t *mdl, uint32_t it, double obj) {
-	// First we just compute the error rate on devel or train data
-	double te, se;
-	tag_eval(mdl, &te, &se);
-	// Next, we compute the number of active features
-	uint64_t act = 0;
-	for (uint64_t f = 0; f < mdl->nftr; f++)
-		if (mdl->theta[f] != 0.0)
-			act++;
-	// Compute timings. As some training algorithms are multi-threaded, we
-	// cannot use ansi/c function and must rely on posix one to sum time
-	// spent in main thread and in child ones.
-	tms_t now; gettimeofday(&now, NULL);
-	double tm = (now.tv_sec        + (double)now.tv_usec        * 1.0e-6)
-	          - (mdl->timer.tv_sec + (double)mdl->timer.tv_usec * 1.0e-6);
-	mdl->total += tm;
-	mdl->timer  = now;
-	// And display progress report
-	info("  [%4"PRIu32"]", it);
-	info(obj >= 0.0 ? " obj=%-10.2f" : " obj=NA", obj);
-	info(" act=%-8"PRIu64, act);
-	info(" err=%5.2f%%/%5.2f%%", te, se);
-	info(" time=%.2fs/%.2fs", tm, mdl->total);
-	info("\n");
-	// If requested, check the error rate stoping criterion. We check if the
-	// error rate is stable enough over a few iterations.
-	bool res = true;
-	if (mdl->opt->stopwin != 0) {
-		mdl->werr[mdl->wpos] = te;
-		mdl->wpos = (mdl->wpos + 1) % mdl->opt->stopwin;
-		mdl->wcnt++;
-		if (mdl->wcnt >= mdl->opt->stopwin) {
-			double emin = 200.0, emax = -100.0;
-			for (uint32_t i = 0; i < mdl->opt->stopwin; i++) {
-				emin = min(emin, mdl->werr[i]);
-				emax = max(emax, mdl->werr[i]);
-			}
-			if (emax - emin < mdl->opt->stopeps)
-				res = false;
-		}
-	}
-	// And return
-	if (uit_stop)
-		return false;
-	return res;
+    // First we just compute the error rate on devel or train data
+    double te, se;
+    tag_eval(mdl, &te, &se);
+    // Next, we compute the number of active features
+    uint64_t act = 0;
+    for (uint64_t f = 0; f < mdl->nftr; f++)
+        if (mdl->theta[f] != 0.0)
+            act++;
+    // Compute timings. As some training algorithms are multi-threaded, we
+    // cannot use ansi/c function and must rely on posix one to sum time
+    // spent in main thread and in child ones.
+    tms_t now;
+    gettimeofday(&now, NULL);
+    double tm = (now.tv_sec + (double) now.tv_usec * 1.0e-6)
+                - (mdl->timer.tv_sec + (double) mdl->timer.tv_usec * 1.0e-6);
+    mdl->total += tm;
+    mdl->timer = now;
+    // And display progress report
+    info("  [%4"PRIu32"]", it);
+    info(obj >= 0.0 ? " obj=%-10.2f" : " obj=NA", obj / mdl->train->nseq);
+    info(" act=%-8"PRIu64, act);
+    info(" err=%5.2f%%/%5.2f%%", te, se);
+    info(" time=%.2fs/%.2fs", tm, mdl->total);
+    info("\n");
+    // If requested, check the error rate stoping criterion. We check if the
+    // error rate is stable enough over a few iterations.
+    bool res = true;
+    if (mdl->opt->stopwin != 0) {
+        mdl->werr[mdl->wpos] = te;
+        mdl->wpos = (mdl->wpos + 1) % mdl->opt->stopwin;
+        mdl->wcnt++;
+        if (mdl->wcnt >= mdl->opt->stopwin) {
+            double emin = 200.0, emax = -100.0;
+            for (uint32_t i = 0; i < mdl->opt->stopwin; i++) {
+                emin = min(emin, mdl->werr[i]);
+                emax = max(emax, mdl->werr[i]);
+            }
+            if (emax - emin < mdl->opt->stopeps)
+                res = false;
+        }
+    }
+    // And return
+    if (uit_stop)
+        return false;
+    return res;
 }
 
 

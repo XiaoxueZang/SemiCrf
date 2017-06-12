@@ -243,16 +243,11 @@ void grd_bwd(grd_st_t *grd_st, const tok_t *tok) {
     const uint64_t B = mdl->nbws;
     const int32_t S = mdl->reader->maxSegment;
     double (*beta )[T + 1][B] = (void *) grd_st->beta;
-    // double *scale = grd_st->scale;
-    // double *unorm = grd_st->unorm;
-    // double *bnorm = grd_st->bnorm;
     id_map_t (*obMap)[T][S] = (void *) tok->observationMapjp;
     uint64_t (*featureMap)[mdl->npats][mdl->nobs] = (void *) mdl->featureMap;
     int i, j, y, skId, minseq, d;
     double featureScore;
     uint64_t patId, featId;
-    // id_map_t *observationMapjd = NULL;
-    // uint64_t *skIds;
 
     for (j = T; j >= 0; --j) {
         for (i = 0; i < B; ++i) {
@@ -593,7 +588,7 @@ double grd_gradient(grd_t *grd) {
         nl2 += v * v;
     }
     fx += nl1 * rho1 + nl2 * rho2 / 2.0;
-    info("gradient sum is %f. loss is %f.\n", sum / mdl->train->nseq, fx / mdl->train->nseq);
+    // info("gradient sum is %f. loss is %f.\n", sum / mdl->train->nseq, fx / mdl->train->nseq);
     return fx;
 }
 
