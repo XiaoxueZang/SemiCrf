@@ -25,7 +25,6 @@ mdl_t *mdl_new(rdr_t *rdr) {
     mdl->nlbl = mdl->nobs = mdl->nftr = mdl->npats = 0;
     mdl->featureMap = NULL;
     mdl->theta = NULL;
-    // mdl->empiricalScore = NULL;
     mdl->train = mdl->devel = NULL;
     mdl->reader = rdr;
     mdl->werr = NULL;

@@ -33,13 +33,6 @@
  *   fixed in next version.
  ******************************************************************************/
 
-/* tag_expsc:
- *   Compute the score lattice for classical Viterbi decoding. This is the same
- *   as for the first step of the gradient computation with the exception that
- *   we don't need to take the exponential of the scores as the Viterbi decoding
- *   works in log-space.
- */
-
 typedef struct trace {
     uint32_t prev_pos;
     uint64_t pkId;
@@ -132,7 +125,7 @@ void tag_viterbi(mdl_t *mdl, const tok_t *seq,
  */
 void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
     qrk_t *lbls = mdl->reader->lbl;
-    const uint32_t Y = mdl->nlbl;
+    const uint64_t Y = mdl->nlbl;
     const uint32_t N = mdl->opt->nbest;  // only output the best solution. N = 1.
     // We start by preparing the statistic collection to be ready if check
     // option is used. The stat array hold the following for each label

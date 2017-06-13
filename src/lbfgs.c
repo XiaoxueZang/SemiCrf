@@ -48,6 +48,7 @@ void trn_lbfgs(mdl_t *mdl) {
 	double *y[M];   // History value y_k = Δ(g,pg)
 	double  p[M];   // ρ_k
 	double  fh[C];  // f(x) history
+	double stopeps = mdl->opt->stopeps * mdl->train->nseq;
 	// Initialization: Here, we have to allocate memory on the heap as we
 	// cannot request so much memory on the stack as this will have a too
 	// big impact on performance and will be refused by the system on non-
@@ -246,9 +247,8 @@ void trn_lbfgs(mdl_t *mdl) {
 			memcpy(x, xp, sizeof(double) * F);
 			break;
 		}
-
-		if (uit_progress(mdl, k + 1, fx) == false)
-		 	break;
+		if ((mdl->devel != NULL) && (uit_progress(mdl, k + 1, fx) == false))
+			break;
 
 		// 3rd step: we update the history used for approximating the
 		// inverse of the diagonal of the hessian
@@ -279,7 +279,7 @@ void trn_lbfgs(mdl_t *mdl) {
 		if (k >= C) {
 			const double of = fh[(k + 1) % C];
 			dlt = fabs(of - fx) / of;
-			if (dlt < mdl->opt->stopeps)
+			if (dlt < stopeps)
 				break;
 		}
 	}

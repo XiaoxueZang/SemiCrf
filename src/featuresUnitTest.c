@@ -37,6 +37,16 @@ static void dotrain(mdl_t *mdl) {
     if (mdl->train == NULL || mdl->train->nseq == 0)
         fatal("no train data loaded");
 
+    // If present, load the development set in the model. If not specified,
+    // the training dataset will be used instead.
+    if (mdl->opt->devel != NULL) {
+        info("* Load development data\n");
+        FILE *file = fopen(mdl->opt->devel, "r");
+        if (file == NULL)
+            pfatal("cannot open development file");
+        mdl->devel = rdr_readdat(mdl->reader, file, true, false);
+        fclose(file);
+    }
     if (mdl->theta == NULL)
         info("* Initialize the model\n");
     else
