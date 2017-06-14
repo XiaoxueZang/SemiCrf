@@ -1,0 +1,136 @@
+xiaoxue@ubuntu:~/Downloads/SemiCRF/Applications$ python PsdPredictor.py 
+train seq:5224 label:2
+featureslist:85108 obsMap:66998 featureMap:535984 patternMap:8
+forwardStateMap:7 [,1,0,1|0|1,0|1,0|1|0,1|0]
+backwardStateMap:8 [1|0|1|0,1,0,0|1|0|1,1|0|1,0|1,0|1|0,1|0]
+enter in func
+exit func W len:85108 logi=6.202974 derisum=-11.102235 consume:802544188
+enter in jac
+enter in func
+exit func W len:85108 logi=4.512150 derisum=-31.172587 consume:883208299
+enter in jac
+enter in func
+exit func W len:85108 logi=3.890747 derisum=-21.612827 consume:826021170
+enter in jac
+enter in func
+exit func W len:85108 logi=3.447360 derisum=-13.633673 consume:814652088
+enter in jac
+enter in func
+exit func W len:85108 logi=3.194274 derisum=-3.204512 consume:812653755
+enter in jac
+enter in func
+exit func W len:85108 logi=3.080979 derisum=-3.782348 consume:838247194
+enter in jac
+enter in func
+exit func W len:85108 logi=2.930638 derisum=-1.848464 consume:909348470
+enter in jac
+enter in func
+exit func W len:85108 logi=2.588007 derisum=-3.914631 consume:812717909
+enter in jac
+enter in func
+exit func W len:85108 logi=2.488242 derisum=-2.938951 consume:845603920
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:832487716
+enter in jac
+enter in func
+exit func W len:85108 logi=3.585057 derisum=-19.362859 consume:831776731
+enter in jac
+enter in func
+exit func W len:85108 logi=2.425215 derisum=-7.128536 consume:850108210
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417807 derisum=-6.496631 consume:1666658865
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417200 derisum=-6.395839 consume:1635987957
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417107 derisum=-6.377508 consume:1652099900
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417090 derisum=-6.374096 consume:1647350539
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417087 derisum=-6.373459 consume:1640560306
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373340 consume:1639010390
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373318 consume:1655187434
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373313 consume:1641801748
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373313 consume:1646830359
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:1643330377
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:1641940670
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:877793814
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:811631002
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:808343200
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:809944586
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:810712440
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:808740679
+enter in jac
+enter in func
+exit func W len:85108 logi=2.417086 derisum=-6.373312 consume:810616806
+enter in jac
+enter in func
+exit func W len:85108 logi=2.387989 derisum=1.772722 consume:813633374
+enter in jac
+enter in func
+exit func W len:85108 logi=2.363727 derisum=-2.576943 consume:808852807
+enter in jac
+enter in func
+exit func W len:85108 logi=2.356310 derisum=-2.988345 consume:805325999
+enter in jac
+enter in func
+exit func W len:85108 logi=2.336080 derisum=-4.667829 consume:806531656
+enter in jac
+enter in func
+exit func W len:85108 logi=2.432281 derisum=-9.503100 consume:813159915
+enter in jac
+enter in func
+exit func W len:85108 logi=2.313801 derisum=-5.842900 consume:814099128
+enter in jac
+enter in func
+exit func W len:85108 logi=2.308524 derisum=-5.882897 consume:809159163
+enter in jac
+enter in func
+exit func W len:85108 logi=2.419078 derisum=-10.423997 consume:811748055
+enter in jac
+enter in func
+exit func W len:85108 logi=2.307245 derisum=-6.515188 consume:815793618
+enter in jac
+obsMap size:66998
+patternMap size:8
+featureList size:85107
+forwardStateMap size:7
+backwardStateMap size:8
+train seq:653 label:2
+train seq:653 label:2
+5398 tokens with 5398.0 relevant tokens (not equal to O).
+5398.0 predicted tokens with 4682.0 being correct.
+	Prec	#Pred	Rec	#Phrase	F1	#Correct
+86.74%	86.74%	5398.0	86.74%	5398.0	86.74%	4682.0
+0	87.62%	3951.0	93.85%	3689.0	90.63%	3462.0
+1	84.31%	1447.0	71.39%	1709.0	77.31%	1220.0
+

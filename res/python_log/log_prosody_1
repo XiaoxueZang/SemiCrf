@@ -1,0 +1,55 @@
+xiaoxue@ubuntu:~/Downloads/SemiCRF/Applications$ python PsdPredictor.py 
+train seq:5224 label:2
+featureslist:86026 obsMap:67426 featureMap:539408 patternMap:8
+forwardStateMap:7 [,1,0,1|0|1,0|1,0|1|0,1|0]
+backwardStateMap:8 [1|0|1|0,1,0,0|1|0|1,1|0|1,0|1,0|1|0,1|0]
+enter in func
+exit func W len:86026 logi=6.196135 derisum=-24.035120 consume:1472490187
+enter in jac
+enter in func
+exit func W len:86026 logi=4.556301 derisum=-12.832615 consume:1515534948
+enter in jac
+enter in func
+exit func W len:86026 logi=3.900479 derisum=6.115073 consume:1518260038
+enter in jac
+enter in func
+exit func W len:86026 logi=3.400245 derisum=1.362956 consume:1523935382
+enter in jac
+enter in func
+exit func W len:86026 logi=2.698876 derisum=-6.519777 consume:1514000833
+enter in jac
+enter in func
+exit func W len:86026 logi=2.489086 derisum=-6.021399 consume:1509755872
+enter in jac
+enter in func
+exit func W len:86026 logi=2.532158 derisum=-9.257980 consume:1517974109
+enter in jac
+enter in func
+exit func W len:86026 logi=2.387833 derisum=-7.224421 consume:1524352087
+enter in jac
+enter in func
+exit func W len:86026 logi=2.239934 derisum=-5.569257 consume:1516459635
+enter in jac
+enter in func
+exit func W len:86026 logi=2.089896 derisum=-7.011224 consume:1517762006
+enter in jac
+enter in func
+exit func W len:86026 logi=3.005319 derisum=-8.510822 consume:1518406414
+enter in jac
+enter in func
+exit func W len:86026 logi=2.089538 derisum=-7.294161 consume:1516028140
+enter in jac
+obsMap size:67426
+patternMap size:8
+featureList size:86025
+forwardStateMap size:7
+backwardStateMap size:8
+train seq:653 label:2
+train seq:653 label:2
+5398 tokens with 5398.0 relevant tokens (not equal to O).
+5398.0 predicted tokens with 4877.0 being correct.
+	Prec	#Pred	Rec	#Phrase	F1	#Correct
+90.35%	90.35%	5398.0	90.35%	5398.0	90.35%	4877.0
+0	89.07%	2114.0	86.65%	2173.0	87.85%	1883.0
+1	91.17%	3284.0	92.84%	3225.0	92.00%	2994.0
+
