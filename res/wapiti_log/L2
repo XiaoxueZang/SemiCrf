@@ -1,0 +1,68 @@
+xiaoxue@ubuntu:~/wapiti-1.5.0$ wapiti train -p dat/pat.txt dat/prosody/prosody_2.train model/prosody_2
+* Load patterns
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   44646
+    nb features: 89294
+* Train the model with l-bfgs
+  [   1] obj=29023.06   act=28238    err=32.07%/94.64% time=0.19s/0.19s
+  [   2] obj=28339.32   act=47674    err=32.07%/94.64% time=0.08s/0.27s
+  [   3] obj=26789.34   act=46030    err=32.03%/94.64% time=0.08s/0.35s
+  [   4] obj=19104.89   act=45380    err=17.36%/81.22% time=0.08s/0.43s
+  [   5] obj=16596.19   act=40514    err=15.93%/73.70% time=0.08s/0.52s
+  [   6] obj=15210.40   act=36322    err=14.78%/72.82% time=0.08s/0.60s
+  [   7] obj=14339.40   act=35260    err=14.81%/69.20% time=0.08s/0.67s
+  [   8] obj=13876.85   act=35990    err=13.98%/69.60% time=0.08s/0.75s
+  [   9] obj=13557.22   act=35678    err=13.92%/68.19% time=0.08s/0.83s
+  [  10] obj=13236.65   act=34958    err=13.51%/67.53% time=0.08s/0.91s
+  [  11] obj=12855.80   act=32798    err=13.24%/65.79% time=0.08s/0.99s
+  [  12] obj=12769.11   act=30590    err=12.49%/65.52% time=0.08s/1.07s
+  [  13] obj=12396.87   act=30992    err=12.75%/63.61% time=0.08s/1.15s
+  [  14] obj=12337.59   act=31398    err=12.57%/63.30% time=0.08s/1.23s
+  [  15] obj=12257.41   act=31284    err=12.66%/63.34% time=0.08s/1.31s
+  [  16] obj=12154.98   act=31046    err=12.46%/63.28% time=0.08s/1.39s
+  [  17] obj=12068.94   act=30594    err=12.39%/62.81% time=0.08s/1.47s
+  [  18] obj=11933.26   act=30110    err=12.13%/62.61% time=0.08s/1.55s
+  [  19] obj=11812.88   act=29752    err=12.09%/61.85% time=0.08s/1.63s
+  [  20] obj=11695.21   act=29642    err=11.79%/61.52% time=0.08s/1.71s
+  [  21] obj=11533.77   act=28680    err=11.79%/60.91% time=0.08s/1.79s
+  [  22] obj=11388.99   act=28054    err=11.44%/60.45% time=0.08s/1.87s
+  [  23] obj=11221.15   act=27434    err=11.31%/59.61% time=0.08s/1.95s
+  [  24] obj=11008.49   act=27074    err=10.62%/57.41% time=0.08s/2.02s
+  [  25] obj=10818.23   act=26930    err=10.45%/56.66% time=0.08s/2.10s
+  [  26] obj=10621.51   act=26888    err= 9.93%/55.63% time=0.08s/2.18s
+  [  27] obj=10436.89   act=26606    err= 9.54%/54.06% time=0.08s/2.26s
+  [  28] obj=10270.57   act=26408    err= 9.06%/52.51% time=0.08s/2.34s
+  [  29] obj=10110.09   act=26370    err= 8.62%/51.15% time=0.08s/2.42s
+  [  30] obj=9980.34    act=26166    err= 8.20%/49.77% time=0.09s/2.51s
+  [  31] obj=9832.92    act=25806    err= 7.77%/47.91% time=0.08s/2.59s
+  [  32] obj=9730.32    act=25732    err= 7.46%/46.84% time=0.09s/2.68s
+  [  33] obj=9637.16    act=25504    err= 7.11%/44.95% time=0.10s/2.77s
+  [  34] obj=9549.79    act=24914    err= 6.81%/43.76% time=0.08s/2.85s
+  [  35] obj=9472.05    act=24628    err= 6.49%/42.36% time=0.08s/2.93s
+  [  36] obj=9412.70    act=24466    err= 6.28%/41.63% time=0.10s/3.03s
+  [  37] obj=9352.62    act=24248    err= 6.02%/40.24% time=0.10s/3.13s
+  [  38] obj=9304.01    act=23962    err= 5.80%/39.18% time=0.10s/3.23s
+  [  39] obj=9254.29    act=23674    err= 5.52%/37.50% time=0.10s/3.33s
+  [  40] obj=9212.25    act=23408    err= 5.42%/37.48% time=0.08s/3.41s
+  [  41] obj=9170.86    act=22866    err= 5.04%/35.18% time=0.08s/3.49s
+* Save the model
+* Done
+xiaoxue@ubuntu:~/wapiti-1.5.0$ wapiti label -c -m model/prosody_2 dat/prosody/prosody_2.test result.txt
+* Load model
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 11.65%
+    Sequence error: 54.82%
+* Per label statistics
+    0       Pr=0.90  Rc=0.93  F1=0.92
+    1       Pr=0.84  Rc=0.78  F1=0.81
+* Done
