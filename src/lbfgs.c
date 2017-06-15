@@ -48,7 +48,8 @@ void trn_lbfgs(mdl_t *mdl) {
 	double *y[M];   // History value y_k = Δ(g,pg)
 	double  p[M];   // ρ_k
 	double  fh[C];  // f(x) history
-	double stopeps = mdl->opt->stopeps * mdl->train->nseq;
+	// double stopeps = mdl->opt->stopeps * mdl->train->nseq;
+	// info("stopeps is %f.\n", stopeps);
 	// Initialization: Here, we have to allocate memory on the heap as we
 	// cannot request so much memory on the stack as this will have a too
 	// big impact on performance and will be refused by the system on non-
@@ -279,7 +280,8 @@ void trn_lbfgs(mdl_t *mdl) {
 		if (k >= C) {
 			const double of = fh[(k + 1) % C];
 			dlt = fabs(of - fx) / of;
-			if (dlt < stopeps)
+			info("dlt is %f.\n", dlt);
+			if (dlt < mdl->opt->stopeps)
 				break;
 		}
 	}

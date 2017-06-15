@@ -1,0 +1,229 @@
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.0000001 -1 0.5 -d dat/prosody/prosody_2.dev dat/prosody/prosody_2.train dat/model_prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Load development data
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb devel:    653
+    nb labels:   2
+    nb blocks:   66998
+    nb features: 85108
+* Train the model with l-bfgs
+gradient sum is -12.612010. loss is 6.202974.
+gradient sum is -8.918276. loss is 4.303210.
+  [   1] obj=4.30       act=51238    err=19.93%/81.47% time=35.47s/35.47s
+gradient sum is -5.422547. loss is 3.452975.
+  [   2] obj=3.45       act=43105    err=19.24%/80.86% time=24.49s/59.96s
+gradient sum is -6.170939. loss is 2.874098.
+  [   3] obj=2.87       act=39302    err=17.24%/77.79% time=24.76s/84.73s
+gradient sum is 13.086614. loss is 2.900807.
+gradient sum is 4.609220. loss is 2.735696.
+  [   4] obj=2.74       act=37931    err=14.17%/66.16% time=35.94s/120.67s
+gradient sum is -2.660427. loss is 2.574679.
+  [   5] obj=2.57       act=38519    err=14.99%/70.29% time=25.78s/146.45s
+Killed: 9
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.0000001 -1 0.5 dat/prosody/prosody_2.train dat/model_prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   66998
+    nb features: 85108
+* Train the model with l-bfgs
+gradient sum is -12.612010. loss is 6.202974.
+gradient sum is -8.918276. loss is 4.303210.
+gradient sum is -5.422547. loss is 3.452975.
+gradient sum is -6.170939. loss is 2.874098.
+gradient sum is 13.086614. loss is 2.900807.
+gradient sum is 4.609220. loss is 2.735696.
+gradient sum is -2.660427. loss is 2.574679.
+gradient sum is -1.664624. loss is 2.494897.
+gradient sum is -2.088226. loss is 2.307328.
+gradient sum is -8.601894. loss is 2.179433.
+gradient sum is 0.802362. loss is 2.084013.
+gradient sum is -5.028986. loss is 2.029988.
+gradient sum is -0.890703. loss is 1.988692.
+gradient sum is -6.487409. loss is 1.961141.
+gradient sum is 2.061085. loss is 1.919213.
+gradient sum is -3.725110. loss is 1.858146.
+gradient sum is 0.536066. loss is 1.837290.
+gradient sum is -4.582808. loss is 1.800927.
+gradient sum is 0.522546. loss is 1.769246.
+gradient sum is -4.438351. loss is 1.733309.
+gradient sum is 0.767821. loss is 1.704040.
+gradient sum is -4.038377. loss is 1.665095.
+gradient sum is 0.408261. loss is 1.637579.
+gradient sum is -3.835237. loss is 1.604039.
+gradient sum is 0.352589. loss is 1.577269.
+gradient sum is -3.354949. loss is 1.545230.
+gradient sum is 0.156476. loss is 1.520743.
+gradient sum is -2.946691. loss is 1.490822.
+gradient sum is -0.056135. loss is 1.468747.
+gradient sum is -2.533240. loss is 1.441719.
+^C* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m dat/model_prosody_2 dat/prosody/prosody_2.test res/output_prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 15.45%
+    Sequence error: 67.23%
+* Per label statistics
+    0       Pr=0.91  Rc=0.86  F1=0.88
+    1       Pr=0.73  Rc=0.81  F1=0.77
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.0000001 -1 0.5 dat/prosody/prosody_2.train dat/model_prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   66998
+    nb features: 85108
+* Train the model with l-bfgs
+gradient sum is -12.612010. loss is 6.202974.
+gradient sum is -8.918276. loss is 4.303210.
+gradient sum is -5.422547. loss is 3.452975.
+gradient sum is -6.170939. loss is 2.874098.
+gradient sum is 13.086614. loss is 2.900807.
+gradient sum is 4.609220. loss is 2.735696.
+gradient sum is -2.660427. loss is 2.574679.
+gradient sum is -1.664624. loss is 2.494897.
+gradient sum is -2.088226. loss is 2.307328.
+gradient sum is -8.601894. loss is 2.179433.
+gradient sum is 0.802362. loss is 2.084013.
+gradient sum is -5.028986. loss is 2.029988.
+gradient sum is -0.890703. loss is 1.988692.
+gradient sum is -6.487409. loss is 1.961141.
+gradient sum is 2.061085. loss is 1.919213.
+gradient sum is -3.725110. loss is 1.858146.
+gradient sum is 0.536066. loss is 1.837290.
+gradient sum is -4.582808. loss is 1.800927.
+gradient sum is 0.522546. loss is 1.769246.
+^C* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m dat/model_prosody_2 dat/prosody/prosody_2.test res/output_prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 15.82%
+    Sequence error: 66.00%
+* Per label statistics
+    0       Pr=0.92  Rc=0.84  F1=0.88
+    1       Pr=0.71  Rc=0.84  F1=0.77
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ make
+CC: wapiti.c --> wapiti
+src/decoder.c:51:42: warning: unused parameter 'sc' [-Wunused-parameter]
+                 uint32_t out[], double *sc, double psc[]) {
+                                         ^
+src/decoder.c:51:53: warning: unused parameter 'psc' [-Wunused-parameter]
+                 uint32_t out[], double *sc, double psc[]) {
+                                                    ^
+2 warnings generated.
+src/gradient.c:30:6: warning: unused function 'atm_inc' [-Wunused-function]
+void atm_inc(volatile double *value, double inc) {
+     ^
+1 warning generated.
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m dat/model_prosody_2 dat/prosody/prosody_2.test res/output_prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+^C
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.0000001 -1 0.5 dat/prosody/prosody_2.train dat/model_prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   66998
+    nb features: 85108
+* Train the model with l-bfgs
+stopeps is &f.
+gradient sum is -12.612010. loss is 6.202974.
+gradient sum is -8.918276. loss is 4.303210.
+gradient sum is -5.422547. loss is 3.452975.
+gradient sum is -6.170939. loss is 2.874098.
+gradient sum is 13.086614. loss is 2.900807.
+gradient sum is 4.609220. loss is 2.735696.
+gradient sum is -2.660427. loss is 2.574679.
+gradient sum is -1.664624. loss is 2.494897.
+gradient sum is -2.088226. loss is 2.307328.
+^C* Save the model
+* Done
+^[[A^[[A^[[B^[[Byuki-no-MacBook-Pro-4:SemiC./wapiti label -m dat/model_prosody_2 dat/prosody/prosody_2.test res/output_prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 13.12%
+    Sequence error: 60.34%
+* Per label statistics
+    0       Pr=0.88  Rc=0.93  F1=0.91
+    1       Pr=0.84  Rc=0.73  F1=0.78
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ make
+CC: wapiti.c --> wapiti
+src/decoder.c:51:42: warning: unused parameter 'sc' [-Wunused-parameter]
+                 uint32_t out[], double *sc, double psc[]) {
+                                         ^
+src/decoder.c:51:53: warning: unused parameter 'psc' [-Wunused-parameter]
+                 uint32_t out[], double *sc, double psc[]) {
+                                                    ^
+2 warnings generated.
+src/gradient.c:30:6: warning: unused function 'atm_inc' [-Wunused-function]
+void atm_inc(volatile double *value, double inc) {
+     ^
+1 warning generated.
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$

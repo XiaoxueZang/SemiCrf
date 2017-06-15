@@ -89,7 +89,8 @@ void info(const char *msg, ...) {
 void *xmalloc(size_t size) {
 	void *ptr = malloc(size);
 	if (ptr == NULL)
-		fatal("out of memory");
+		info("out of memory.\n");
+		//fatal("out of memory");
 	return ptr;
 }
 

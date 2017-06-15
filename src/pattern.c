@@ -41,7 +41,7 @@ char *generateLabelPattern(tok_t *toks, uint32_t segStart) {
 // Unit tested.
 labelPat_t *generateLabelPatStruct(char *labelPat) {
     labelPat_t *labelPatStruct = malloc(sizeof(labelPat_t));
-    uint32_t size = 200;
+    uint32_t size = 20;
     uint32_t segNum = 0;
     uint32_t len = 0;
     for (uint32_t i = 0; i < size; ++i) {

@@ -36,10 +36,7 @@
 rdr_t *rdr_new(bool doSemi) {
     rdr_t *rdr = xmalloc(sizeof(rdr_t));
     rdr->doSemi = doSemi;
-    if (doSemi == true)
-        rdr->maxSegment = 1;
-    else
-        rdr->maxSegment = -1;
+    rdr->maxSegment = 1;
     rdr->nlbl = rdr->nforwardStateMap = rdr->npats = 0;
     rdr->lbl = qrk_new();
     rdr->obs = qrk_new();
@@ -402,7 +399,7 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
 void generateForwardStateMap(rdr_t *reader) {
     qrk_t *forwardStateMap = reader->forwardStateMap;
     qrk_str2id(forwardStateMap, "");
-    char *str = xmalloc(sizeof(char) * (2 * reader->maxSegment - 1));
+    char *str = reader->maxSegment > 0 ? xmalloc(sizeof(char) * (2 * reader->maxSegment - 1)) : xmalloc(sizeof(char));
     uint64_t nlbl = reader->nlbl;
     for (uint64_t id = 0; id < nlbl; ++id) {
         strcpy(str, qrk_id2str(reader->lbl, id));

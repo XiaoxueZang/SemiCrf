@@ -85,7 +85,7 @@ void uit_cleanup(mdl_t *mdl) {
 }
 
 /* uit_progress:
- *   Display a progress repport to the user consisting of some informations
+ *   Display a progress repport to the user consisting of some information
  *   provided by the trainer: iteration count and objective function value, and
  *   some informations computed here on the current model performances.
  *   This function return true if the trainer have to keep training the model
