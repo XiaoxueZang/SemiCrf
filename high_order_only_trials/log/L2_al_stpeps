@@ -1,0 +1,400 @@
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.5 dat/prosody/prosody_2.train high_order_only_trials/model/prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   70137
+    nb features: 100711
+* Train the model with l-bfgs
+gradient sum is -15.952132. loss is 6.203163.
+gradient sum is -8.367873. loss is 6.660053.
+gradient sum is -14.421168. loss is 5.692513.
+gradient sum is -11.074200. loss is 4.839334.
+gradient sum is -10.320163. loss is 4.337493.
+gradient sum is -8.645402. loss is 3.542191.
+gradient sum is -7.116995. loss is 3.135583.
+gradient sum is -6.702052. loss is 2.860029.
+dlt is 0.409004.
+* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m high_order_only_trials/model/prosody_2 dat/prosody/prosody_2.test high_order_only_trials/result/prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 14.75%
+    Sequence error: 61.87%
+* Per label statistics
+    0       Pr=0.87  Rc=0.92  F1=0.90
+    1       Pr=0.81  Rc=0.70  F1=0.75
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.1 dat/prosody/prosody_2.train high_order_only_trials/model/prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   70137
+    nb features: 100711
+* Train the model with l-bfgs
+gradient sum is -15.952132. loss is 6.203163.
+gradient sum is -8.367873. loss is 6.660053.
+gradient sum is -14.421168. loss is 5.692513.
+gradient sum is -11.074200. loss is 4.839334.
+gradient sum is -10.320163. loss is 4.337493.
+gradient sum is -8.645402. loss is 3.542191.
+gradient sum is -7.116995. loss is 3.135583.
+gradient sum is -6.702052. loss is 2.860029.
+dlt is 0.409004.
+gradient sum is -6.337256. loss is 2.691917.
+dlt is 0.379384.
+gradient sum is -5.740610. loss is 2.542250.
+dlt is 0.282294.
+gradient sum is -5.790703. loss is 2.474551.
+dlt is 0.210816.
+gradient sum is -5.561575. loss is 2.429651.
+dlt is 0.150480.
+gradient sum is -5.398383. loss is 2.375185.
+dlt is 0.117660.
+gradient sum is -5.180016. loss is 2.318325.
+dlt is 0.088082.
+* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m high_order_only_trials/model/prosody_2 dat/prosody/prosody_2.test high_order_only_trials/result/prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 12.58%
+    Sequence error: 56.20%
+* Per label statistics
+    0       Pr=0.89  Rc=0.93  F1=0.91
+    1       Pr=0.83  Rc=0.75  F1=0.79
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.01 dat/prosody/prosody_2.train high_order_only_trials/model/prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   70137
+    nb features: 100711
+* Train the model with l-bfgs
+gradient sum is -15.952132. loss is 6.203163.
+gradient sum is -8.367873. loss is 6.660053.
+gradient sum is -14.421168. loss is 5.692513.
+gradient sum is -11.074200. loss is 4.839334.
+gradient sum is -10.320163. loss is 4.337493.
+gradient sum is -8.645402. loss is 3.542191.
+gradient sum is -7.116995. loss is 3.135583.
+gradient sum is -6.702052. loss is 2.860029.
+dlt is 0.409004.
+gradient sum is -6.337256. loss is 2.691917.
+dlt is 0.379384.
+gradient sum is -5.740610. loss is 2.542250.
+dlt is 0.282294.
+gradient sum is -5.790703. loss is 2.474551.
+dlt is 0.210816.
+gradient sum is -5.561575. loss is 2.429651.
+dlt is 0.150480.
+gradient sum is -5.398383. loss is 2.375185.
+dlt is 0.117660.
+gradient sum is -5.180016. loss is 2.318325.
+dlt is 0.088082.
+gradient sum is -5.211256. loss is 2.277883.
+dlt is 0.079476.
+gradient sum is -4.889472. loss is 2.235154.
+dlt is 0.080051.
+gradient sum is -4.901629. loss is 2.218948.
+dlt is 0.065779.
+gradient sum is -4.784983. loss is 2.205217.
+dlt is 0.048789.
+gradient sum is -4.792557. loss is 2.185066.
+dlt is 0.040747.
+gradient sum is -4.570303. loss is 2.157716.
+dlt is 0.034645.
+gradient sum is -4.637759. loss is 2.121237.
+dlt is 0.044035.
+gradient sum is -4.383282. loss is 2.082500.
+dlt is 0.055648.
+gradient sum is -4.424793. loss is 2.041647.
+dlt is 0.065636.
+gradient sum is -4.213356. loss is 1.996623.
+dlt is 0.074659.
+gradient sum is -4.233344. loss is 1.955664.
+dlt is 0.078055.
+gradient sum is -4.008239. loss is 1.910837.
+dlt is 0.082431.
+gradient sum is -3.943405. loss is 1.861074.
+dlt is 0.088445.
+gradient sum is -3.704891. loss is 1.812671.
+dlt is 0.092132.
+gradient sum is -3.588757. loss is 1.771196.
+dlt is 0.094325.
+gradient sum is -3.363193. loss is 1.728712.
+dlt is 0.095312.
+gradient sum is -3.209227. loss is 1.690822.
+dlt is 0.091481.
+gradient sum is -3.015735. loss is 1.658779.
+dlt is 0.084898.
+gradient sum is -2.917928. loss is 1.631639.
+dlt is 0.078793.
+gradient sum is -2.743594. loss is 1.605618.
+dlt is 0.071206.
+gradient sum is -2.649426. loss is 1.583635.
+dlt is 0.063393.
+gradient sum is -2.524186. loss is 1.563518.
+dlt is 0.057428.
+gradient sum is -2.462001. loss is 1.545611.
+dlt is 0.052725.
+gradient sum is -2.376257. loss is 1.529914.
+dlt is 0.047149.
+gradient sum is -2.340042. loss is 1.516355.
+dlt is 0.042485.
+gradient sum is -2.297225. loss is 1.506367.
+dlt is 0.036552.
+gradient sum is -2.288043. loss is 1.496944.
+dlt is 0.031488.
+gradient sum is -2.263630. loss is 1.489099.
+dlt is 0.026678.
+gradient sum is -2.266330. loss is 1.482976.
+dlt is 0.022012.
+gradient sum is -2.247774. loss is 1.477531.
+dlt is 0.019143.
+gradient sum is -2.258444. loss is 1.472933.
+dlt is 0.016039.
+gradient sum is -2.238276. loss is 1.469167.
+dlt is 0.013385.
+gradient sum is -2.236215. loss is 1.465557.
+dlt is 0.011746.
+gradient sum is -2.215903. loss is 1.462869.
+dlt is 0.009924.
+* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m high_order_only_trials/model/prosody_2 dat/prosody/prosody_2.test high_order_only_trials/result/prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 12.02%
+    Sequence error: 54.21%
+* Per label statistics
+    0       Pr=0.90  Rc=0.92  F1=0.91
+    1       Pr=0.83  Rc=0.79  F1=0.81
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.03 dat/prosody/prosody_2.train high_order_only_trials/model/prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   70137
+    nb features: 100711
+* Train the model with l-bfgs
+gradient sum is -15.952132. loss is 6.203163.
+gradient sum is -8.367873. loss is 6.660053.
+gradient sum is -14.421168. loss is 5.692513.
+gradient sum is -11.074200. loss is 4.839334.
+gradient sum is -10.320163. loss is 4.337493.
+gradient sum is -8.645402. loss is 3.542191.
+gradient sum is -7.116995. loss is 3.135583.
+gradient sum is -6.702052. loss is 2.860029.
+dlt is 0.409004.
+gradient sum is -6.337256. loss is 2.691917.
+dlt is 0.379384.
+gradient sum is -5.740610. loss is 2.542250.
+dlt is 0.282294.
+gradient sum is -5.790703. loss is 2.474551.
+dlt is 0.210816.
+gradient sum is -5.561575. loss is 2.429651.
+dlt is 0.150480.
+gradient sum is -5.398383. loss is 2.375185.
+dlt is 0.117660.
+gradient sum is -5.180016. loss is 2.318325.
+dlt is 0.088082.
+gradient sum is -5.211256. loss is 2.277883.
+dlt is 0.079476.
+gradient sum is -4.889472. loss is 2.235154.
+dlt is 0.080051.
+gradient sum is -4.901629. loss is 2.218948.
+dlt is 0.065779.
+gradient sum is -4.784983. loss is 2.205217.
+dlt is 0.048789.
+gradient sum is -4.792557. loss is 2.185066.
+dlt is 0.040747.
+gradient sum is -4.570303. loss is 2.157716.
+dlt is 0.034645.
+gradient sum is -4.637759. loss is 2.121237.
+dlt is 0.044035.
+gradient sum is -4.383282. loss is 2.082500.
+dlt is 0.055648.
+gradient sum is -4.424793. loss is 2.041647.
+dlt is 0.065636.
+gradient sum is -4.213356. loss is 1.996623.
+dlt is 0.074659.
+gradient sum is -4.233344. loss is 1.955664.
+dlt is 0.078055.
+gradient sum is -4.008239. loss is 1.910837.
+dlt is 0.082431.
+gradient sum is -3.943405. loss is 1.861074.
+dlt is 0.088445.
+gradient sum is -3.704891. loss is 1.812671.
+dlt is 0.092132.
+gradient sum is -3.588757. loss is 1.771196.
+dlt is 0.094325.
+gradient sum is -3.363193. loss is 1.728712.
+dlt is 0.095312.
+gradient sum is -3.209227. loss is 1.690822.
+dlt is 0.091481.
+gradient sum is -3.015735. loss is 1.658779.
+dlt is 0.084898.
+gradient sum is -2.917928. loss is 1.631639.
+dlt is 0.078793.
+gradient sum is -2.743594. loss is 1.605618.
+dlt is 0.071206.
+gradient sum is -2.649426. loss is 1.583635.
+dlt is 0.063393.
+gradient sum is -2.524186. loss is 1.563518.
+dlt is 0.057428.
+gradient sum is -2.462001. loss is 1.545611.
+dlt is 0.052725.
+gradient sum is -2.376257. loss is 1.529914.
+dlt is 0.047149.
+gradient sum is -2.340042. loss is 1.516355.
+dlt is 0.042485.
+gradient sum is -2.297225. loss is 1.506367.
+dlt is 0.036552.
+gradient sum is -2.288043. loss is 1.496944.
+dlt is 0.031488.
+gradient sum is -2.263630. loss is 1.489099.
+dlt is 0.026678.
+* Save the model
+* Done
+
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m high_order_only_trials/model/prosody_2 dat/prosody/prosody_2.test high_order_only_trials/result/prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 11.65%
+    Sequence error: 53.75%
+* Per label statistics
+    0       Pr=0.91  Rc=0.93  F1=0.92
+    1       Pr=0.83  Rc=0.79  F1=0.81
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti train -e 0.035 dat/prosody/prosody_2.train high_order_only_trials/model/prosody_2
+* Load training data
+   1000 sequences loaded
+   2000 sequences loaded
+   3000 sequences loaded
+   4000 sequences loaded
+   5000 sequences loaded
+* Initialize the model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Summary
+    nb train:    5224
+    nb labels:   2
+    nb blocks:   70137
+    nb features: 100711
+* Train the model with l-bfgs
+gradient sum is -15.952132. loss is 6.203163.
+gradient sum is -8.367873. loss is 6.660053.
+gradient sum is -14.421168. loss is 5.692513.
+gradient sum is -11.074200. loss is 4.839334.
+gradient sum is -10.320163. loss is 4.337493.
+gradient sum is -8.645402. loss is 3.542191.
+gradient sum is -7.116995. loss is 3.135583.
+gradient sum is -6.702052. loss is 2.860029.
+dlt is 0.409004.
+gradient sum is -6.337256. loss is 2.691917.
+dlt is 0.379384.
+gradient sum is -5.740610. loss is 2.542250.
+dlt is 0.282294.
+gradient sum is -5.790703. loss is 2.474551.
+dlt is 0.210816.
+gradient sum is -5.561575. loss is 2.429651.
+dlt is 0.150480.
+gradient sum is -5.398383. loss is 2.375185.
+dlt is 0.117660.
+gradient sum is -5.180016. loss is 2.318325.
+dlt is 0.088082.
+gradient sum is -5.211256. loss is 2.277883.
+dlt is 0.079476.
+gradient sum is -4.889472. loss is 2.235154.
+dlt is 0.080051.
+gradient sum is -4.901629. loss is 2.218948.
+dlt is 0.065779.
+gradient sum is -4.784983. loss is 2.205217.
+dlt is 0.048789.
+gradient sum is -4.792557. loss is 2.185066.
+dlt is 0.040747.
+gradient sum is -4.570303. loss is 2.157716.
+dlt is 0.034645.
+* Save the model
+* Done
+yuki-no-MacBook-Pro-4:SemiCrf zangxiaoxue$ ./wapiti label -m high_order_only_trials/model/prosody_2 dat/prosody/prosody_2.test high_order_only_trials/result/prosody_2.txt
+* Load model
+inside buildForwardTransition
+inside buildBackwardTransition
+inside buildPatternTransition
+finish mdl_sync
+* Label sequences
+    Nb sequences  : 653
+    Token error   : 11.65%
+    Sequence error: 55.13%
+* Per label statistics
+    0       Pr=0.90  Rc=0.94  F1=0.92
+    1       Pr=0.85  Rc=0.77  F1=0.81
+* Done

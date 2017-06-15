@@ -164,10 +164,10 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
             for (uint32_t t = 0; t < T; t++) {
                 if (!mdl->opt->label) {
                     fprintf(fout, "%s\t", toks->toks[t][4]);
-                    /* if want to choose to output the true label too, uncomment the following.
-                     * if (mdl->opt->check)
-                     *      fprintf(fout, "%s\t", toks->lbl[t]);
-                     */
+                    // if want to choose to output the true label too, uncomment the following.
+                    if (mdl->opt->check)
+                        fprintf(fout, "%s\t", toks->lbl[t]);
+
                 }
                 uint32_t lbl = out[t * N + n];
                 const char *lblstr = qrk_id2str(lbls, lbl);
