@@ -12,9 +12,6 @@
 #include "features.h"
 #include "reader.h"
 
-// typedef struct qrk_s qrk_t;
-// typedef struct feature_dat_s feature_dat_t;
-// typedef struct rdr_s rdr_t;
 typedef struct labelPat_s labelPat_t;
 struct labelPat_s {
     char *labelPat;
@@ -29,13 +26,17 @@ labelPat_t *generateLabelPatStruct(char *labelPat);
 
 char *generateLabelPattern(tok_t *toks, uint32_t segStart);
 
-feature_dat_t *generateObs(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat);
+feature_dat_t *generateObs(rdr_t *rdr, tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat, bool doSemi);
 
 uint64_t getLastLabelId(rdr_t *rdr, const char *p);
 
 uint64_t getLongestIndexId(char *labelPat, qrk_t *qrk);
 
 char *getLongestSuffix(char* labelPat, qrk_t *qrk);
+
+pat_t *pat_comp(char *p);
+
+void pat_free(pat_t *pat);
 
 #endif
 

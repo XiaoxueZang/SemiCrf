@@ -8,11 +8,7 @@
 #include <string.h>
 
 #include "pattern.h"
-#include "sequence.h"
-#include "reader.h"
 #include "tools.h"
-#include "features.h"
-
 
 // I assume that label is only one char.
 // Unit Tested
@@ -85,7 +81,7 @@ labelPat_t *generateLabelPatStruct(char *labelPat) {
     return labelPatStruct;
 }
 
-feature_dat_t *generateObs(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
+feature_dat_t *generateObs(rdr_t *rdr, tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat, bool doSemi) {
     uint32_t size = 5000;
     feature_dat_t *featurePack = xmalloc(sizeof(feature_dat_t));
     featurePack->len = 0;
@@ -93,10 +89,7 @@ feature_dat_t *generateObs(tok_t *tok, uint32_t segStart, uint32_t segEnd, char 
     labelPat_t *labelPatStruct = generateLabelPatStruct(labelPat);
     feature_dat_t *partFeat = xmalloc(sizeof(feature_dat_t) * size);
     for (int i = labelPatStruct->order; i >= 0; --i) {
-        if (i == 0) partFeat = generateCrfFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
-        if (i == 1) partFeat = generateFirstOrderFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
-        if (i == 2) partFeat = generateSecondOrderFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
-        if (i == 3) partFeat = generateThirdOrderFeaturesAt(tok, segStart, segEnd, labelPatStruct->suffixes[i]);
+        partFeat = generateFeaturesAt(rdr, tok, segStart, segEnd, labelPatStruct->suffixes[i], doSemi, i);
         if (partFeat == NULL) continue;
         uint32_t arraySize = partFeat->len;
         for (uint32_t j = 0; j < arraySize; ++j) {
@@ -155,3 +148,113 @@ char *getLongestSuffix(char* labelPat, qrk_t *qrk) {
     fatal("No longest suffix.\n");
     return "";
 };
+
+/* pat_comp:
+ *   Compile the pattern to a form more suitable to easily apply it on tokens
+ *   list during data reading. The given pattern string is interned in the
+ *   compiled pattern and will be freed with it, so you don't have to take care
+ *   of it and must not modify it after the compilation.
+ */
+pat_t *pat_comp(char *p) {
+    pat_t *pat = NULL;
+    // Allocate memory for the compiled pattern, the allocation is based
+    // on an over-estimation of the number of required item. As compiled
+    // pattern take a neglectible amount of memory, this waste is not
+    // important.
+    uint32_t mitems = 0;
+    for (uint32_t pos = 0; p[pos] != '\0'; pos++)
+        if (p[pos] == '%')
+            mitems++;
+    mitems = mitems * 2 + 1;
+    pat = xmalloc(sizeof(pat_t) + sizeof(pat->items[0]) * mitems);
+    pat->src = p;
+    // Next, we go through the pattern compiling the items as they are
+    // found. Commands are parsed and put in a corresponding item, and
+    // segment of char not in a command are put in a 's' item.
+    uint32_t nitems = 0;
+    uint32_t ntoks = 0;
+    uint32_t pos = 0;
+    while (p[pos] != '\0') {
+        pat_item_t *item = &(pat->items[nitems++]);
+        item->value = NULL;
+        if (p[pos] == '%') {
+            // This is a command, so first parse its type and check
+            // its a valid one. Next prepare the item.
+            const char type = (const char) tolower(p[pos + 1]);
+            if (type != 'x' && type != 't' && type != 'm')
+                fatal("unknown command type: '%c'", type);
+            item->type = type;
+            item->caps = (p[pos + 1] != type);
+            pos += 2;
+            // Next we parse the offset and column and store them in
+            // the item.
+            const char *at = p + pos;
+            uint32_t col;
+            int32_t off;
+            int nch;
+            item->absolute = false;
+            if (sscanf(at, "[@%"SCNi32",%"SCNu32"%n", &off, &col, &nch) == 2)
+                item->absolute = true;
+            else if (sscanf(at, "[%"SCNi32",%"SCNu32"%n", &off, &col, &nch) != 2)
+                fatal("invalid pattern: %s", p);
+            item->offset = off;
+            item->column = col;
+            ntoks = max(ntoks, col);
+            pos += nch;
+            // And parse the end of the argument list, for 'x' there
+            // is nothing to read but for 't' and 'm' we have to get
+            // read the regexp.
+            if (type == 't' || type == 'm') {
+                if (p[pos] != ',' && p[pos + 1] != '"')
+                    fatal("missing arg in pattern: %s", p);
+                const int32_t start = (pos += 2);
+                while (p[pos] != '\0') {
+                    if (p[pos] == '"')
+                        break;
+                    if (p[pos] == '\\' && p[pos+1] != '\0')
+                        pos++;
+                    pos++;
+                }
+                if (p[pos] != '"')
+                    fatal("unended argument: %s", p);
+                const int32_t len = pos - start;
+                item->value = xmalloc(sizeof(char) * (len + 1));
+                memcpy(item->value, p + start, len);
+                item->value[len] = '\0';
+                pos++;
+            }
+            // Just check the end of the arg list and loop.
+            if (p[pos] != ']')
+                fatal("missing end of pattern: %s", p);
+            pos++;
+        } else {
+            // No command here, so build an 's' item with the chars
+            // until end of pattern or next command and put it in
+            // the list.
+            const int32_t start = pos;
+            while (p[pos] != '\0' && p[pos] != '%')
+                pos++;
+            const int32_t len = pos - start;
+            item->type  = 's';
+            item->caps  = false;
+            item->value = xmalloc(sizeof(char) * (len + 1));
+            memcpy(item->value, p + start, len);
+            item->value[len] = '\0';
+        }
+    }
+    pat->ntoks = ntoks;
+    pat->nitems = nitems;
+    return pat;
+}
+
+/* pat_free:
+ *   Free all memory used by a compiled pattern object. Note that this will free
+ *   the pointer to the source string given to pat_comp so you must be sure to
+ *   not use this pointer again.
+ */
+void pat_free(pat_t *pat) {
+    for (uint32_t it = 0; it < pat->nitems; it++)
+        free(pat->items[it].value);
+    free(pat->src);
+    free(pat);
+}

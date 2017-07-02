@@ -35,12 +35,8 @@ void updateMaxMemory(tok_t *tok, rdr_t *reader);
 
 void putIntoDatabase(char *obs, char *labelPat, rdr_t *database);
 
-feature_dat_t *generateCrfFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat);
+feature_dat_t *generateFeaturesAt(rdr_t *rdr, tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat, bool doSemi, int level);
 
-feature_dat_t *generateFirstOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat);
-
-feature_dat_t *generateSecondOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat);
-
-feature_dat_t *generateThirdOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat);
+char *pat_exec(const pat_t *pat, const tok_t *tok, uint32_t at);
 
 #endif //WAPITI_FEATURES_H

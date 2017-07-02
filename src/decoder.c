@@ -48,7 +48,7 @@ typedef struct trace {
  *   enough stack space.
  */
 void tag_viterbi(mdl_t *mdl, const tok_t *seq,
-                 uint32_t out[], double *sc, double psc[]) {
+                 uint32_t out[]) {
     const uint32_t T = seq->len;
     const uint64_t A = mdl->nfws;
     uint32_t j, k, l;
@@ -74,7 +74,7 @@ void tag_viterbi(mdl_t *mdl, const tok_t *seq,
                     pkId = mdl->forwardTransition[i].idsOne[k];
                     pkyId = mdl->forwardTransition[i].idsTwo[k];
                     pky = (char *) qrk_id2str(mdl->reader->backwardStateMap, pkyId);
-                    feature_dat_t *features = generateObs((tok_t *) seq, j - d, j, pky);
+                    feature_dat_t *features = generateObs(mdl->reader, (tok_t *) seq, j - d, j, pky, mdl->reader->doSemi);
                     double featureScore = 0;
                     for (l = 0; l < features->len; ++l) {
                         char *f = concat(concat(features->features[l]->pats, "_"), features->features[l]->obs);
@@ -153,7 +153,7 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
         double *psc = xmalloc(sizeof(double) * T * N);
         double *scs = xmalloc(sizeof(double) * N);
         if (N == 1)
-            tag_viterbi(mdl, toks, (uint32_t *) out, scs, (double *) psc);
+            tag_viterbi(mdl, toks, (uint32_t *) out);
         else
             fatal("Do not support the N-most probable labelling.");
         // Next we output the raw sequence (current token) with an additional column for
@@ -236,9 +236,9 @@ void tag_label(mdl_t *mdl, FILE *fin, FILE *fout) {
             const double Pr = (double) stat[2][y] / stat[1][y];
             const double F1 = 2.0 * (Pr * Rc) / (Pr + Rc);
             info("    %-6s", lbl);
-            info("  Pr=%.2f", Pr);
-            info("  Rc=%.2f", Rc);
-            info("  F1=%.2f\n", F1);
+            info("  Pr=%.4f", Pr);
+            info("  Rc=%.4f", Rc);
+            info("  F1=%.4f\n", F1);
         }
     }
 }
@@ -280,7 +280,7 @@ static void tag_evalsub(job_t *job, uint32_t id, uint32_t cnt, eval_t *eval) {
             const tok_t *seq = dat->tok[s];
             const uint32_t T = seq->len;
             uint32_t *out = xmalloc(sizeof(uint32_t) * T);
-            tag_viterbi(mdl, seq, out, NULL, NULL);
+            tag_viterbi(mdl, seq, out); //, NULL, NULL);
             // And check for eventual (probable ?) errors
             bool err = false;
             uint64_t labelId;

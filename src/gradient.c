@@ -417,8 +417,6 @@ double grd_gradient(grd_t *grd) {
     double fx = grd->grd_st[0]->lloss;
     for (uint32_t w = 1; w < W; w++)
         fx += grd->grd_st[w]->lloss;
-    //info("g is %f.\n", grd->grd_st);
-    // info("loss is %f.\n", fx / mdl->train->nseq);
 #ifdef ATM_ANSI
     for (uint32_t w = 1; w < W; w++)
         for (uint64_t f = 0; f < F; f++)

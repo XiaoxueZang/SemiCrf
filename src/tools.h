@@ -16,16 +16,24 @@
 #define ARRAY_SIZE(x) (sizeof((x)) / sizeof((x)[0]))
 #endif
 
+char *itoa(int val, char *out, int base);
+
 void fatal(const char *msg, ...);
+
 void pfatal(const char *msg, ...);
+
 void warning(const char *msg, ...);
+
 void info(const char *msg, ...);
 
 void *xmalloc(size_t size);
+
 void *xrealloc(void *ptr, size_t size);
+
 char *xstrdup(const char *str);
 
 char *ns_readstr(FILE *file);
+
 void ns_writestr(FILE *file, const char *str);
 
 // char *convertUint64ToChar(uint64_t num);

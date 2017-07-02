@@ -121,7 +121,7 @@ struct {
 	size_t  offset;
 } opt_switch[] = {
 	{0, "-T", "--type",    'S', offsetof(opt_t, type        )},
-	{0, "##", "--semi",    'B', offsetof(opt_t, doSemi      )},
+	{0, "-S", "--semi",    'B', offsetof(opt_t, doSemi      )},
 	{0, "-a", "--algo",    'S', offsetof(opt_t, algo        )},
 	{0, "-p", "--pattern", 'S', offsetof(opt_t, pattern     )},
 	{0, "-m", "--model",   'S', offsetof(opt_t, model       )},

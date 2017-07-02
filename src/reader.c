@@ -15,6 +15,7 @@
 #include "vmath.h"
 
 #define MAX_LABEL_COUNT 10
+#define MAX_DEPTH 4
 
 /*******************************************************************************
  * Datafile reader
@@ -34,16 +35,21 @@
  *   Create a new empty reader object.
 */
 rdr_t *rdr_new(bool doSemi) {
-    rdr_t *rdr = xmalloc(sizeof(rdr_t));
+    rdr_t *rdr = xmalloc(sizeof(rdr_t) + sizeof(pat_t **) * MAX_DEPTH);
     rdr->doSemi = doSemi;
     rdr->maxSegment = 1;
     rdr->nlbl = rdr->nforwardStateMap = rdr->npats = 0;
+    rdr->ntpls = 0;
     rdr->lbl = qrk_new();
     rdr->obs = qrk_new();
     rdr->pats = qrk_new();
     rdr->featList = qrk_new();
     rdr->backwardStateMap = qrk_new();
     rdr->forwardStateMap = qrk_new();
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        rdr->tpl[i] = NULL;
+        rdr->ntpl[i] = 0;
+    }
     rdr->maxMemory = xmalloc(sizeof(int32_t) * MAX_LABEL_COUNT);
     for (int i = 0; i < MAX_LABEL_COUNT; ++i) {
         rdr->maxMemory[i] = 0;
@@ -57,6 +63,11 @@ rdr_t *rdr_new(bool doSemi) {
  */
 void rdr_free(rdr_t *rdr) {
     free(rdr->maxMemory);
+    for (uint32_t i = 0; i < MAX_DEPTH; i++) {
+        for (uint32_t j = 0; j < rdr->ntpl[i]; ++j) {
+            pat_free(rdr->tpl[i][j]);
+        }
+    }
     qrk_free(rdr->pats);
     qrk_free(rdr->backwardStateMap);
     qrk_free(rdr->forwardStateMap);
@@ -298,7 +309,7 @@ tok_t *rdr_raw2tok(rdr_t *rdr, const raw_t *raw, bool lbl, bool doTrain) {
     // set segment end and segment length.
     if (doTrain == true) {
         for (int i = T - 1; i >= 0; --i) {
-            if (i < (int)T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
+            if (i < (int) T - 1 && (strcmp(tok->lbl[i], tok->lbl[i + 1]) == 0)) {
                 tok->sege[i] = tok->sege[i + 1];
             } else {
                 tok->sege[i] = (uint32_t) i;
@@ -387,7 +398,7 @@ void updateReader(tok_t *tok, rdr_t *rdr) {
         segEnd = tok->sege[segStart];
         char *labelPat = generateLabelPattern(tok, segStart);
 
-        feature_dat_t *features = generateObs(tok, segStart, segEnd, labelPat);
+        feature_dat_t *features = generateObs(rdr, tok, segStart, segEnd, labelPat, rdr->doSemi);
         for (uint32_t id = 0; id < features->len; ++id) {
             putIntoDatabase(features->features[id]->obs, features->features[id]->pats, rdr);
         }
@@ -451,13 +462,23 @@ void rdr_load(rdr_t *rdr, FILE *file) {
     fpos_t pos;
     fgetpos(file, &pos);
 
-    if (fscanf(file, "#rdr#%d\n", &rdr->maxSegment) != 1)
+    if (fscanf(file, "#rdr#%d#%"SCNu32"/%"SCNu32"/%"SCNu32"/%"SCNu32"/%"SCNu32"\n", &rdr->maxSegment, &rdr->ntpls,
+               &rdr->ntpl[0], &rdr->ntpl[1], &rdr->ntpl[2], &rdr->ntpl[3]) != 6)
         fatal(err);
     if (fscanf(file, "#maxMemory#%"SCNu64"\n", &rdr->nlbl) != 1)
         fatal(err);
     for (uint64_t i = 0; i < rdr->nlbl; ++i) {
         if (fscanf(file, "%d\n", &rdr->maxMemory[i]) != 1)
             fatal(err);
+    }
+    if (rdr->ntpls != 0) {
+        for (int i = 0; i < MAX_DEPTH; ++i) {
+            rdr->tpl[i] = xmalloc(sizeof(pat_t *) * rdr->ntpl[i]);
+            for (uint32_t p = 0; p < rdr->ntpl[i]; p++) {
+                char *pat = ns_readstr(file);
+                rdr->tpl[i][p] = pat_comp(pat);
+            }
+        }
     }
 
     qrk_load(rdr->lbl, file);
@@ -468,17 +489,68 @@ void rdr_load(rdr_t *rdr, FILE *file) {
     qrk_load(rdr->backwardStateMap, file);
 }
 
+/* rdr_loadpat:
+ *   Load and compile patterns from given file and store them in the reader. As
+ *   we compile patterns, syntax errors in them will be raised at this time.
+ */
+void rdr_loadpat(rdr_t *rdr, FILE *file) {
+    while (!feof(file)) {
+        // Read raw input line
+        char *line = rdr_readline(file);
+        if (line == NULL)
+            break;
+        // Remove comments and trailing spaces
+        int end = (int) strcspn(line, "#");
+        while (end != 0 && isspace(line[end - 1]))
+            end--;
+        if (end == 0) {
+            free(line);
+            continue;
+        }
+        line[end] = '\0';
+        line[0] = (char) tolower(line[0]);
+        // Compile pattern and add it to the list
+        pat_t *pat = pat_comp(line); // inside src is the raw pattern
+        rdr->ntpls++;
+        char type = line[0];
+        switch (type) {
+            case 'a':
+                rdr->ntpl[0]++;
+                break;
+            case 'b':
+                rdr->ntpl[1]++;
+                break;
+            case 'c':
+                rdr->ntpl[2]++;
+                break;
+            case 'd':
+                rdr->ntpl[3]++;
+                break;
+                // case '*': rdr->ntpl[0]++; rdr->ntpl[1]++; break;
+            default:
+                fatal("unknown pattern type '%c'", line[0]);
+        }
+        rdr->tpl[type - 'a'] = xrealloc(rdr->tpl[type - 'a'], sizeof(pat_t *) * rdr->ntpl[type - 'a']);
+        rdr->tpl[type - 'a'][rdr->ntpl[type - 'a'] - 1] = pat;
+        // rdr->ntoks = max(rdr->ntoks, pat->ntoks);
+    }
+}
 
 /* rdr_save:
  *   Save the reader to the given file so it can be loaded back. The save format
  *   is plain text and portable accros computers.
 */
 void rdr_save(const rdr_t *rdr, FILE *file) {
-    if (fprintf(file, "#rdr#%d\n", rdr->maxSegment) < 0)
+    if (fprintf(file, "#rdr#%d#%"PRIu32"/%"PRIu32"/%"PRIu32"/%"PRIu32"/%"PRIu32"\n", rdr->maxSegment, rdr->ntpls,
+                rdr->ntpl[0], rdr->ntpl[1], rdr->ntpl[2], rdr->ntpl[3]) < 0)
         pfatal("cannot write to file");
     fprintf(file, "#maxMemory#%"PRIu64"\n", rdr->nlbl);
     for (uint64_t i = 0; i < rdr->nlbl; ++i) {
         fprintf(file, "%d\n", rdr->maxMemory[i]);
+    }
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        for (uint32_t p = 0; p < rdr->ntpl[i]; p++)
+            ns_writestr(file, rdr->tpl[i][p]->src);
     }
     qrk_save(rdr->lbl, file);
     qrk_save(rdr->obs, file);

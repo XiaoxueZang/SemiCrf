@@ -277,7 +277,7 @@ void generateSentenceObs(mdl_t *mdl) {
                 (*poi)[i][j - i].len = 0;
                 (*poi)[i][j - i].ids = xmalloc(sizeof(uint64_t) * mdl->nobs);
                 char *labelPat = generateLabelPattern(tok, i);
-                feature_dat_t *features = generateObs(tok, i, j, labelPat);
+                feature_dat_t *features = generateObs(mdl->reader, tok, i, j, labelPat, mdl->reader->doSemi);
                 qrk_t *set = qrk_new();
                 qrk_lock(set, true);
                 for (uint32_t id = 0; id < features->len; ++id) {

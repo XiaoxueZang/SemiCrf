@@ -32,7 +32,7 @@ void updateMaxMemory(tok_t *tok, rdr_t *reader) {
             char *label = tok->lbl[segStart];
             id = qrk_str2id(reader->lbl, label);
 
-            if ((reader->maxMemory[id]) < (int)(tok->segl[segStart] + 1)) {
+            if ((reader->maxMemory[id]) < (int) (tok->segl[segStart] + 1)) {
                 reader->maxMemory[id] = tok->segl[segStart] + 1;
                 reader->maxSegment = max(reader->maxSegment, reader->maxMemory[id]);
             }
@@ -65,112 +65,88 @@ feature_t *constructFeature(char *obs, char *labelPat) {
     return feat;
 }
 
-feature_dat_t* generateCrfFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
+/* pat_exec:
+ *   Execute a compiled pattern at position 'at' in the given tokens sequences
+ *   in order to produce an observation string. The string is returned as a
+ *   newly allocated memory block and the caller is responsible to free it when
+ *   not needed anymore.
+ */
+char *pat_exec(const pat_t *pat, const tok_t *tok, uint32_t at) {
+    static char *bval[] = {"_x-1", "_x-2", "_x-3", "_x-4", "_x-#"};
+    static char *eval[] = {"_x+1", "_x+2", "_x+3", "_x+4", "_x+#"};
+    const uint32_t T = tok->len;
+    // Prepare the buffer who will hold the result
+    uint32_t size = 16, pos = 0;
+    char *buffer = xmalloc(sizeof(char) * size);
+    // And loop over the compiled items
+    for (uint32_t it = 0; it < pat->nitems; it++) {
+        const pat_item_t *item = &(pat->items[it]);
+        char *value = NULL;
+        uint32_t len = 0;
+        // First, if needed, we retrieve the token at the referenced
+        // position in the sequence. We store it in value and let the
+        // command handler do what it need with it.
+        if (item->type != 's') {
+            int pos = item->offset;
+            if (item->absolute) {
+                if (item->offset < 0)
+                    pos += T;
+                else
+                    pos--;
+            } else {
+                pos += at;
+            }
+            uint32_t col = item->column;
+            if (pos < 0)
+                value = bval[min(-pos - 1, 4)];
+            else if (pos >= (int32_t)T)
+                value = eval[min( pos - (int32_t)T, 4)];
+            else if (col >= tok->cnts[pos])
+                fatal("missing tokens, cannot apply pattern");
+            else
+                value = tok->toks[pos][col];
+        }
+        // Next, we handle the command, 's' and 'x' are very simple but
+        // 't' and 'm' require us to call the regexp matcher.
+        if (item->type == 's') {
+            value = item->value;
+            len = strlen(value);
+        } else if (item->type == 'x') {
+            len = strlen(value);
+        }
+        // And we add it to the buffer, growing it if needed. If the
+        // user requested it, we also remove caps from the string.
+        if (pos + len >= size - 1) {
+            while (pos + len >= size - 1)
+                size = size * 1.4;
+            buffer = xrealloc(buffer, sizeof(char) * size);
+        }
+        memcpy(buffer + pos, value, len);
+        if (item->caps)
+            for (uint32_t i = pos; i < pos + len; i++)
+                buffer[i] = tolower(buffer[i]);
+        pos += len;
+    }
+    // Adjust the result and return it.
+    buffer[pos++] = '\0';
+    buffer = xrealloc(buffer, sizeof(char) * pos);
+    return buffer;
+}
+
+feature_dat_t *generateFeaturesAt(rdr_t *rdr, tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat, bool doSemi, int i) {
     uint32_t size = 500; // I consider that this is the maximum feature number.
-    feature_dat_t* allFeats = xmalloc(sizeof(feature_dat_t));
+    feature_dat_t *allFeats = xmalloc(sizeof(feature_dat_t));
     allFeats->len = 0;
     allFeats->features = xmalloc(sizeof(feature_t *) * size);
-    // the length of featureHead is 39.
-    static char *featHead[] = {"SENLEN.", "SENWORDCNT.", "LEFTDIST.", "RIGHTDIST.", "CURWORD.", "PREWORD.", "PPREWORD.",
-                        "NEXTWORD.", "NNEXTWORD.", "CURPOS.", "PREPOS.", "PPREPOS.", "NEXTPOS.", "NNEXTPOS.",
-                        "CURWLEN.", "PREWLEN.", "PPREWLEN.", "NEXTWLEN.", "NNEXTWLEN.", "0FLOOR.", "0FLOORDIST.",
-                        "0CEIL.", "0CEILDIST.", "1FLOOR.", "1FLOORDIST.", "1CEIL.", "1CEILDIST.", "2FLOOR.",
-                        "2FLOORDIST.", "2CEIL.", "2CEILDIST.", "3FLOOR.", "3FLOORDIST.", "3CEIL.", "3CEILDIST.",
-                        "4FLOOR.", "4FLOORDIST.", "4CEIL.", "4CEILDIST."};
-    for (uint32_t i = 0; i <= 2; ++i) {
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[i], tok->toks[segStart][i]), labelPat);
-    }
-    allFeats->features[allFeats->len++] = constructFeature(concat(featHead[3], tok->toks[segEnd][3]), labelPat);
-    for (uint32_t i = segStart; i <= segEnd; ++i) {
-        for (uint32_t j = 4; j <= 18; ++j) {
-            allFeats->features[allFeats->len++] = constructFeature(concat(featHead[j], tok->toks[i][j]), labelPat);
-        }
-    }
-    if (strcmp(tok->toks[segStart][19], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[19], tok->toks[segStart][19]), labelPat);
-    if (strcmp(tok->toks[segStart][20], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[20], tok->toks[segStart][20]), labelPat);
-    if (strcmp(tok->toks[segEnd][21], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[21], tok->toks[segEnd][21]), labelPat);
-    if (strcmp(tok->toks[segEnd][22], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[22], tok->toks[segEnd][22]), labelPat);
-
-    if (strcmp(tok->toks[segStart][23], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[23], tok->toks[segStart][23]), labelPat);
-    if (strcmp(tok->toks[segStart][24], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[24], tok->toks[segStart][24]), labelPat);
-    if (strcmp(tok->toks[segEnd][25], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[25], tok->toks[segEnd][25]), labelPat);
-    if (strcmp(tok->toks[segEnd][26], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[26], tok->toks[segEnd][26]), labelPat);
-
-    if (strcmp(tok->toks[segStart][27], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[27], tok->toks[segStart][27]), labelPat);
-    if (strcmp(tok->toks[segStart][28], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[28], tok->toks[segStart][28]), labelPat);
-    if (strcmp(tok->toks[segEnd][29], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[29], tok->toks[segEnd][29]), labelPat);
-    if (strcmp(tok->toks[segEnd][30], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[30], tok->toks[segEnd][30]), labelPat);
-    if (strcmp(tok->toks[segStart][31], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[31], tok->toks[segStart][31]), labelPat);
-    if (strcmp(tok->toks[segStart][32], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[32], tok->toks[segStart][32]), labelPat);
-    if (strcmp(tok->toks[segEnd][33], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[33], tok->toks[segEnd][33]), labelPat);
-    if (strcmp(tok->toks[segEnd][34], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[34], tok->toks[segEnd][34]), labelPat);
-
-    if (strcmp(tok->toks[segStart][35], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[35], tok->toks[segStart][35]), labelPat);
-    if (strcmp(tok->toks[segStart][36], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[36], tok->toks[segStart][36]), labelPat);
-    if (strcmp(tok->toks[segEnd][37], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[37], tok->toks[segEnd][37]), labelPat);
-    if (strcmp(tok->toks[segEnd][38], "-1"))
-        allFeats->features[allFeats->len++] = constructFeature(concat(featHead[38], tok->toks[segEnd][38]), labelPat);
-    // free(featHead);
-    return allFeats;
-}
-
-feature_dat_t *generateFirstOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
-    uint32_t size = 100; // I consider that this is the maximum feature number.
-    feature_dat_t* allFeats = xmalloc(sizeof(feature_dat_t));
-    allFeats->len = 0;
-    allFeats->features = xmalloc(sizeof(feature_t *) * size);
-    if (segStart > 0) {
-        allFeats->features[allFeats->len++] = constructFeature("1E", labelPat);
-        for (uint32_t i = segStart; i <= segEnd; ++i) {
-            allFeats->features[allFeats->len++] = constructFeature(concat("E1W.", tok->toks[i][4]), labelPat);
+    for (uint32_t x = 0; (x < rdr->ntpl[i]) && (i <= (int) segStart); x++) {
+        // Get the observation and map it to an identifier
+        char *obs = pat_exec(rdr->tpl[i][x], tok, segStart); // read one pattern inside rdr->pats and return it. ex. "*1:_x-1"
+        allFeats->features[allFeats->len++] = constructFeature(obs, labelPat);
+        if (allFeats->len == size) {
+            size = (uint32_t) (size * 1.4);
+            allFeats = xrealloc(allFeats, sizeof(feature_dat_t) * size);
         }
     }
     return allFeats;
 }
 
-feature_dat_t *generateSecondOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
-    uint32_t size = 100; // I consider that this is the maximum feature number.
-    feature_dat_t* allFeats = xmalloc(sizeof(feature_dat_t));
-    allFeats->len = 0;
-    allFeats->features = xmalloc(sizeof(feature_t *) * size);
-    if (segStart > 1) {
-        allFeats->features[allFeats->len++] = constructFeature("2E", labelPat);
-        for (uint32_t i = segStart; i <= segEnd; ++i) {
-            allFeats->features[allFeats->len++] = constructFeature(concat("E2W.", tok->toks[i][4]), labelPat);
-        }
-    }
-    return allFeats;
-}
-
-feature_dat_t *generateThirdOrderFeaturesAt(tok_t *tok, uint32_t segStart, uint32_t segEnd, char *labelPat) {
-    uint32_t size = 100; // I consider that this is the maximum feature number.
-    feature_dat_t* allFeats = xmalloc(sizeof(feature_dat_t));
-    allFeats->len = 0;
-    allFeats->features = xmalloc(sizeof(feature_t *) * size);
-    if (segStart > 2) {
-        allFeats->features[allFeats->len++] = constructFeature("3E", labelPat);
-        for (uint32_t i = segStart; i <= segEnd; ++i) {
-            allFeats->features[allFeats->len++] = constructFeature(concat("E3W.", tok->toks[i][4]), labelPat);
-        }
-    }
-    return allFeats;
-}

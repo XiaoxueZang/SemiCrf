@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <stdarg.h>
@@ -22,19 +23,39 @@
  *   around it and realloc who check and fail in case of error.
  ******************************************************************************/
 
+void strreverse(char *begin, char *end) {
+    char aux;
+    while (end > begin)
+        aux = *end, *end-- = *begin, *begin++ = aux;
+}
+
+char *itoa(int value, char *str, int base) {
+    static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+    char *wstr = str;
+    int sign;
+    // Take care of sign
+    if ((sign = value) < 0) value = -value;
+    // Conversion. Number is reversed.
+    do *wstr++ = num[value % base]; while (value /= base);
+    if (sign < 0) *wstr++ = '-';
+    *wstr = '\0';
+    strreverse(str, wstr - 1);
+    return str;
+}
+
 /* fatal:
  *   This is the main error function, it will print the given message with same
  *   formating than the printf family and exit program with an error. We let the
  *   OS care about freeing ressources.
  */
 void fatal(const char *msg, ...) {
-	va_list args;
-	fprintf(stderr, "error: ");
-	va_start(args, msg);
-	vfprintf(stderr, msg, args);
-	va_end(args);
-	fprintf(stderr, "\n");
-	exit(EXIT_FAILURE);
+    va_list args;
+    fprintf(stderr, "error: ");
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+    exit(EXIT_FAILURE);
 }
 
 /* pfatal:
@@ -45,14 +66,14 @@ void fatal(const char *msg, ...) {
  *   calling pfatal.
  */
 void pfatal(const char *msg, ...) {
-	const char *err = strerror(errno);
-	va_list args;
-	fprintf(stderr, "error: ");
-	va_start(args, msg);
-	vfprintf(stderr, msg, args);
-	va_end(args);
-	fprintf(stderr, "\n\t<%s>\n", err);
-	exit(EXIT_FAILURE);
+    const char *err = strerror(errno);
+    va_list args;
+    fprintf(stderr, "error: ");
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n\t<%s>\n", err);
+    exit(EXIT_FAILURE);
 }
 
 /* warning:
@@ -61,12 +82,12 @@ void pfatal(const char *msg, ...) {
  *   have happen and the result might be not what it have expected.
  */
 void warning(const char *msg, ...) {
-	va_list args;
-	fprintf(stderr, "warning: ");
-	va_start(args, msg);
-	vfprintf(stderr, msg, args);
-	va_end(args);
-	fprintf(stderr, "\n");
+    va_list args;
+    fprintf(stderr, "warning: ");
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
 }
 
 /* info:
@@ -76,10 +97,10 @@ void warning(const char *msg, ...) {
  *   this function doesn't automatically append a new line character.
  */
 void info(const char *msg, ...) {
-	va_list args;
-	va_start(args, msg);
-	vfprintf(stderr, msg, args);
-	va_end(args);
+    va_list args;
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
 }
 
 /* xmalloc:
@@ -87,11 +108,11 @@ void info(const char *msg, ...) {
  *   allocated, so it will never return NULL.
  */
 void *xmalloc(size_t size) {
-	void *ptr = malloc(size);
-	if (ptr == NULL)
-		info("out of memory.\n");
-		//fatal("out of memory");
-	return ptr;
+    void *ptr = malloc(size);
+    if (ptr == NULL)
+        // info("out of memory.\n");
+        fatal("out of memory");
+    return ptr;
 }
 
 /* xrealloc:
@@ -99,10 +120,10 @@ void *xmalloc(size_t size) {
  *   error and so never return NULL.
  */
 void *xrealloc(void *ptr, size_t size) {
-	void *new = realloc(ptr, size);
-	if (new == NULL)
-		fatal("out of memory");
-	return new;
+    void *new = realloc(ptr, size);
+    if (new == NULL)
+        fatal("out of memory");
+    return new;
 }
 
 /* xstrdup:
@@ -110,10 +131,10 @@ void *xrealloc(void *ptr, size_t size) {
  *   allocation error.
  */
 char *xstrdup(const char *str) {
-	const size_t len = strlen(str) + 1;
-	char *res = xmalloc(sizeof(char) * len);
-	memcpy(res, str, len);
-	return res;
+    const size_t len = strlen(str) + 1;
+    char *res = xmalloc(sizeof(char) * len);
+    memcpy(res, str, len);
+    return res;
 }
 
 /******************************************************************************
@@ -132,29 +153,29 @@ char *xstrdup(const char *str) {
  *   returned as a newly allocated bloc of memory 0-terminated.
  */
 char *ns_readstr(FILE *file) {
-	uint32_t len;
-	if (fscanf(file, "%"SCNu32":", &len) != 1) {
-		// info("buf is %u.\n", len);
-		pfatal("cannot read from file");
-	}
-	char *buf = xmalloc(len + 1);
-	if ((len != 0) && (fread(buf, len, 1, file) != 1)) {
-		pfatal("cannot read from file");
-	}
-	if (fgetc(file) != ',')
-		fatal("invalid format");
-	buf[len] = '\0';
-	fgetc(file);
-	return buf;
+    uint32_t len;
+    if (fscanf(file, "%"SCNu32":", &len) != 1) {
+        // info("buf is %u.\n", len);
+        pfatal("cannot read from file");
+    }
+    char *buf = xmalloc(len + 1);
+    if ((len != 0) && (fread(buf, len, 1, file) != 1)) {
+        pfatal("cannot read from file");
+    }
+    if (fgetc(file) != ',')
+        fatal("invalid format");
+    buf[len] = '\0';
+    fgetc(file);
+    return buf;
 }
 
 /* ns_writestr:
  *   Write a string in the netstring format to the given file.
  */
 void ns_writestr(FILE *file, const char *str) {
-	const uint32_t len = strlen(str);
-	if (fprintf(file, "%"PRIu32":%s,\n", len, str) < 0)
-		pfatal("cannot write to file");
+    const uint32_t len = strlen(str);
+    if (fprintf(file, "%"PRIu32":%s,\n", len, str) < 0)
+        pfatal("cannot write to file");
 }
 
 /*

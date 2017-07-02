@@ -23,6 +23,18 @@
  * Training
  ******************************************************************************/
 static void dotrain(mdl_t *mdl) {
+    // Load the pattern file. This will unlock the database if previously
+    // locked by loading a model.
+    if (mdl->opt->pattern != NULL) {
+        info("* Load patterns\n");
+        FILE *file = fopen(mdl->opt->pattern, "r");
+        if (file == NULL)
+            pfatal("cannot open pattern file");
+        rdr_loadpat(mdl->reader, file);
+        info("Finish loading the pattern file\n");
+        fclose(file);
+        qrk_lock(mdl->reader->obs, false);
+    }
     info("* Load training data\n");
     FILE *file = stdin;
     if (mdl->opt->input != NULL) {
@@ -51,6 +63,7 @@ static void dotrain(mdl_t *mdl) {
         info("* Initialize the model\n");
     else
         info("* Resync the model\n");
+
     mdl_sync(mdl, true);
     // Display some statistics as we all love this.
     info("* Summary\n");

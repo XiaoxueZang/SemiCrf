@@ -10,7 +10,7 @@
 #include "sequence.h"
 
 void tag_viterbi(mdl_t *mdl, const tok_t *seq,
-                 uint32_t out[], double *sc, double psc[]);
+                 uint32_t out[]); // , double *sc, double psc[]);
 
 void tag_label(mdl_t *mdl, FILE *fin, FILE *fout);
 
